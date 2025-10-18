@@ -5,6 +5,7 @@ import {
   insertTaskSchema,
   updateTaskSchema,
   insertProjectSchema,
+  insertTaskTemplateSchema,
   type InsertTask,
   type Task,
 } from "@shared/schema";
@@ -236,6 +237,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(response);
     } catch (error) {
       res.status(500).json({ error: "Failed to process chat message" });
+    }
+  });
+
+  // Task Template routes
+  app.get("/api/templates", async (_req: Request, res: Response) => {
+    try {
+      const templates = await storage.getAllTemplates();
+      res.json(templates);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch templates" });
+    }
+  });
+
+  app.get("/api/templates/:id", async (req: Request, res: Response) => {
+    try {
+      const template = await storage.getTemplate(req.params.id);
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      res.json(template);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch template" });
+    }
+  });
+
+  app.post("/api/templates", async (req: Request, res: Response) => {
+    try {
+      const validatedData = insertTaskTemplateSchema.parse(req.body);
+      const template = await storage.createTemplate(validatedData);
+      res.status(201).json(template);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create template" });
+    }
+  });
+
+  app.patch("/api/templates/:id", async (req: Request, res: Response) => {
+    try {
+      const validatedData = insertTaskTemplateSchema.partial().parse(req.body);
+      const template = await storage.updateTemplate(req.params.id, validatedData);
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      res.json(template);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update template" });
+    }
+  });
+
+  app.delete("/api/templates/:id", async (req: Request, res: Response) => {
+    try {
+      const success = await storage.deleteTemplate(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete template" });
+    }
+  });
+
+  // Create task from template
+  app.post("/api/templates/:id/create-task", async (req: Request, res: Response) => {
+    try {
+      const template = await storage.getTemplate(req.params.id);
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+
+      // Create task from template, optionally overriding some fields
+      const overrides = req.body || {};
+      const taskData: InsertTask = {
+        title: overrides.title || template.title,
+        description: overrides.description !== undefined ? overrides.description : template.description,
+        priority: overrides.priority || template.priority,
+        status: "todo",
+        projectId: overrides.projectId !== undefined ? overrides.projectId : template.projectId,
+        isRecurring: overrides.isRecurring !== undefined ? overrides.isRecurring : template.isRecurring,
+        recurrencePattern: overrides.recurrencePattern !== undefined ? overrides.recurrencePattern : template.recurrencePattern,
+        recurrenceInterval: overrides.recurrenceInterval !== undefined ? overrides.recurrenceInterval : template.recurrenceInterval,
+        dueDate: overrides.dueDate,
+        isAISuggested: false,
+      };
+
+      const task = await storage.createTask(taskData);
+      res.status(201).json(task);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create task from template" });
     }
   });
 
