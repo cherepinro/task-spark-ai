@@ -40,12 +40,17 @@ TaskSpark AI is an intelligent task management application powered by AI. It hel
 - dueDate, completedAt, createdAt
 - projectId
 - isAISuggested, aiCategory
+- isRecurring, recurrencePattern, recurrenceInterval, recurrenceEndDate, parentTaskId
 
 #### Project
 - id, name, color, createdAt
 
 #### AIInsight
 - id, type, title, description, data, createdAt
+
+#### TaskTemplate
+- id, name, title, description, priority, projectId
+- isRecurring, recurrencePattern, recurrenceInterval, createdAt
 
 ### Design System
 - **Color Palette**: Dark mode primary with purple AI accents
@@ -66,8 +71,20 @@ TaskSpark AI is an intelligent task management application powered by AI. It hel
 - `POST /api/ai/suggest` - Get AI suggestions for task
 - `POST /api/ai/parse` - Parse natural language into task
 - `POST /api/ai/chat` - AI chat conversation
+- `GET /api/templates` - Get all task templates
+- `POST /api/templates` - Create new task template
+- `DELETE /api/templates/:id` - Delete task template
+- `POST /api/templates/:id/create-task` - Create task from template
 
 ## Recent Changes
+- 2025-10-18: **Task Templates Feature Complete** - Save frequently used tasks as reusable templates
+  - Added task_templates table with name, title, description, priority, recurrence settings
+  - Backend API routes: GET/POST/DELETE /api/templates, POST /api/templates/:id/create-task
+  - "Save as Template" option in task dropdown menus (Dashboard, Today pages)
+  - Dedicated Templates page (/templates) with grid layout and "Use" buttons
+  - useSaveTemplate hook for easy integration across pages
+  - SaveTemplateDialog component for naming templates
+  - Templates preserve all task properties except dueDate, status, completedAt
 - 2025-10-18: **Recurring Tasks Feature Complete** - Tasks automatically create next occurrence when completed
   - Added database fields: isRecurring, recurrencePattern, recurrenceInterval, recurrenceEndDate, parentTaskId
   - UI controls in task modal with validation (due date required for recurring tasks)
@@ -88,13 +105,14 @@ TaskSpark AI is an intelligent task management application powered by AI. It hel
 - ✅ Phase 5: Search & Filtering (Complete)
 - ✅ Phase 6: AI Chat Integration (Complete)
 - ✅ Phase 7: Recurring Tasks (Complete)
+- ✅ Phase 8: Task Templates (Complete)
 
 ## Next Features
 - Task collaboration & sharing
 - Advanced analytics dashboard
-- Task templates
 - File attachments
 - Subtasks & dependencies
+- Kanban board view
 
 ## Implemented Features
 - ✅ Complete task management with CRUD operations
@@ -105,11 +123,13 @@ TaskSpark AI is an intelligent task management application powered by AI. It hel
 - ✅ AI-powered task analysis and categorization
 - ✅ Priority-based task organization
 - ✅ Dashboard with productivity metrics
-- ✅ Multiple view modes (Today, Upcoming, Projects, AI Insights, Archive)
+- ✅ Multiple view modes (Today, Upcoming, Projects, AI Insights, Archive, Templates)
 - ✅ Dark/Light theme switching
 - ✅ Task creation modal with form validation
 - ✅ AI chat panel with conversation history
 - ✅ Automatic task creation from AI conversations
+- ✅ **Recurring Tasks** - Daily, weekly, monthly, yearly patterns with auto-generation
+- ✅ **Task Templates** - Save and reuse frequently used tasks
 - ✅ Toast notifications for task creation
 - ✅ Command palette with keyboard shortcuts (⌘K)
 - ✅ Beautiful empty states and loading skeletons
