@@ -55,7 +55,11 @@ const navigationItems = [
   },
 ];
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  onQuickAdd?: () => void;
+}
+
+export function AppSidebar({ onQuickAdd }: AppSidebarProps) {
   const [location] = useLocation();
 
   return (
@@ -77,6 +81,7 @@ export function AppSidebar() {
             <Button
               className="w-full justify-start gap-2"
               size="default"
+              onClick={onQuickAdd}
               data-testid="button-quick-add-task"
             >
               <Plus className="h-4 w-4" />
