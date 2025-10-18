@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Calendar, MoreVertical, Sparkles, FolderKanban } from "lucide-react";
+import { Calendar, MoreVertical, Sparkles, FolderKanban, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -104,6 +104,18 @@ export function TaskCard({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {task.isRecurring && (
+              <Badge
+                variant="outline"
+                className="gap-1 border-chart-3/30 bg-chart-3/5 text-chart-3 text-xs"
+                data-testid={`badge-recurring-${task.id}`}
+              >
+                <Repeat className="h-3 w-3" />
+                {task.recurrencePattern && 
+                  task.recurrencePattern.charAt(0).toUpperCase() + task.recurrencePattern.slice(1)
+                }
+              </Badge>
+            )}
             {task.isAISuggested && (
               <Badge
                 variant="outline"
