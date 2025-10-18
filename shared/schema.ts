@@ -16,6 +16,14 @@ export const tasks = pgTable("tasks", {
   aiCategory: text("ai_category"),
   completedAt: timestamp("completed_at", { mode: "date" }),
   createdAt: timestamp("created_at", { mode: "date" }).notNull().default(sql`now()`),
+  
+  // Recurring task fields
+  isRecurring: boolean("is_recurring").default(false),
+  recurrencePattern: varchar("recurrence_pattern", { length: 20 }),
+  recurrenceInterval: varchar("recurrence_interval", { length: 10 }),
+  recurrenceEndDate: timestamp("recurrence_end_date", { mode: "date" }),
+  recurrenceEndCount: varchar("recurrence_end_count", { length: 10 }),
+  parentTaskId: varchar("parent_task_id", { length: 255 }),
 });
 
 export const projects = pgTable("projects", {
@@ -53,6 +61,8 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({
   title: z.string().min(1, "Title is required"),
   priority: z.enum(["low", "medium", "high"]).default("medium"),
   status: z.enum(["todo", "in-progress", "completed", "archived"]).default("todo"),
+  recurrencePattern: z.enum(["daily", "weekly", "monthly", "yearly"]).optional(),
+  recurrenceInterval: z.string().optional(),
 });
 
 export const insertProjectSchema = createInsertSchema(projects).omit({
