@@ -42,6 +42,19 @@ export const aiInsights = pgTable("ai_insights", {
   createdAt: timestamp("created_at", { mode: "date" }).notNull().default(sql`now()`),
 });
 
+export const taskTemplates = pgTable("task_templates", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  priority: varchar("priority", { length: 10 }).notNull().default("medium"),
+  projectId: varchar("project_id", { length: 255 }),
+  isRecurring: boolean("is_recurring").default(false),
+  recurrencePattern: varchar("recurrence_pattern", { length: 20 }),
+  recurrenceInterval: varchar("recurrence_interval", { length: 10 }),
+  createdAt: timestamp("created_at", { mode: "date" }).notNull().default(sql`now()`),
+});
+
 // Relations
 export const tasksRelations = relations(tasks, ({ one }) => ({
   project: one(projects, {
@@ -52,6 +65,14 @@ export const tasksRelations = relations(tasks, ({ one }) => ({
 
 export const projectsRelations = relations(projects, ({ many }) => ({
   tasks: many(tasks),
+  templates: many(taskTemplates),
+}));
+
+export const taskTemplatesRelations = relations(taskTemplates, ({ one }) => ({
+  project: one(projects, {
+    fields: [taskTemplates.projectId],
+    references: [projects.id],
+  }),
 }));
 
 const baseTaskSchema = createInsertSchema(tasks).omit({
@@ -94,9 +115,22 @@ export const insertAIInsightSchema = createInsertSchema(aiInsights).omit({
   createdAt: true,
 });
 
+export const insertTaskTemplateSchema = createInsertSchema(taskTemplates).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  name: z.string().min(1, "Template name is required"),
+  title: z.string().min(1, "Task title is required"),
+  priority: z.enum(["low", "medium", "high"]).default("medium"),
+  recurrencePattern: z.enum(["daily", "weekly", "monthly", "yearly"]).optional(),
+  recurrenceInterval: z.string().optional(),
+});
+
 export type Task = typeof tasks.$inferSelect;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type Project = typeof projects.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type AIInsight = typeof aiInsights.$inferSelect;
 export type InsertAIInsight = z.infer<typeof insertAIInsightSchema>;
+export type TaskTemplate = typeof taskTemplates.$inferSelect;
+export type InsertTaskTemplate = z.infer<typeof insertTaskTemplateSchema>;

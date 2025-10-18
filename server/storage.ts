@@ -5,9 +5,12 @@ import {
   type InsertProject,
   type AIInsight,
   type InsertAIInsight,
+  type TaskTemplate,
+  type InsertTaskTemplate,
   tasks,
   projects,
   aiInsights,
+  taskTemplates,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, ilike } from "drizzle-orm";
@@ -36,6 +39,13 @@ export interface IStorage {
   // AI Insight operations
   getAllInsights(): Promise<AIInsight[]>;
   createInsight(insight: InsertAIInsight): Promise<AIInsight>;
+
+  // Task Template operations
+  getAllTemplates(): Promise<TaskTemplate[]>;
+  getTemplate(id: string): Promise<TaskTemplate | undefined>;
+  createTemplate(template: InsertTaskTemplate): Promise<TaskTemplate>;
+  updateTemplate(id: string, template: Partial<InsertTaskTemplate>): Promise<TaskTemplate | undefined>;
+  deleteTemplate(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -135,6 +145,36 @@ export class DatabaseStorage implements IStorage {
   async createInsight(insertInsight: InsertAIInsight): Promise<AIInsight> {
     const [insight] = await db.insert(aiInsights).values(insertInsight).returning();
     return insight;
+  }
+
+  // Task Template operations
+  async getAllTemplates(): Promise<TaskTemplate[]> {
+    return await db.select().from(taskTemplates).orderBy(desc(taskTemplates.createdAt));
+  }
+
+  async getTemplate(id: string): Promise<TaskTemplate | undefined> {
+    const [template] = await db.select().from(taskTemplates).where(eq(taskTemplates.id, id));
+    return template || undefined;
+  }
+
+  async createTemplate(insertTemplate: InsertTaskTemplate): Promise<TaskTemplate> {
+    const [template] = await db.insert(taskTemplates).values(insertTemplate).returning();
+    return template;
+  }
+
+  async updateTemplate(id: string, updates: Partial<InsertTaskTemplate>): Promise<TaskTemplate | undefined> {
+    const [template] = await db
+      .update(taskTemplates)
+      .set(updates)
+      .where(eq(taskTemplates.id, id))
+      .returning();
+    
+    return template || undefined;
+  }
+
+  async deleteTemplate(id: string): Promise<boolean> {
+    const result = await db.delete(taskTemplates).where(eq(taskTemplates.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 }
 
