@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { type Task, type InsertTask } from "@shared/schema";
+import { useMutation } from "@tanstack/react-query";
+import { type InsertTask } from "@shared/schema";
 import { TaskCard } from "@/components/task-card";
 import { EmptyState } from "@/components/empty-state";
 import { TaskCardSkeleton } from "@/components/loading-state";
@@ -10,14 +10,13 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useFilteredTasks } from "@/hooks/use-filtered-tasks";
 
 export default function Today() {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const { toast } = useToast();
 
-  const { data: tasks, isLoading } = useQuery<Task[]>({
-    queryKey: ["/api/tasks"],
-  });
+  const { data: tasks, isLoading } = useFilteredTasks();
 
   const toggleCompleteMutation = useMutation({
     mutationFn: async ({ taskId, currentStatus }: { taskId: string; currentStatus: string }) => {

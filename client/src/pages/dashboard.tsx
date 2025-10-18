@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { type Task, type AIInsight, type InsertTask } from "@shared/schema";
+import { type AIInsight, type InsertTask } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { TaskCard } from "@/components/task-card";
 import { EmptyState } from "@/components/empty-state";
@@ -11,14 +11,13 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useFilteredTasks } from "@/hooks/use-filtered-tasks";
 
 export default function Dashboard() {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const { toast } = useToast();
 
-  const { data: tasks, isLoading: tasksLoading } = useQuery<Task[]>({
-    queryKey: ["/api/tasks"],
-  });
+  const { data: tasks, isLoading: tasksLoading } = useFilteredTasks();
 
   const { data: insights, isLoading: insightsLoading } = useQuery<AIInsight[]>({
     queryKey: ["/api/insights"],

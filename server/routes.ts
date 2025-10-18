@@ -16,9 +16,15 @@ import {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Task routes
-  app.get("/api/tasks", async (_req: Request, res: Response) => {
+  app.get("/api/tasks", async (req: Request, res: Response) => {
     try {
-      const tasks = await storage.getAllTasks();
+      const filters = {
+        search: req.query.search as string | undefined,
+        priority: req.query.priority as string | undefined,
+        status: req.query.status as string | undefined,
+        projectId: req.query.projectId as string | undefined,
+      };
+      const tasks = await storage.getAllTasks(filters);
       res.json(tasks);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch tasks" });

@@ -1,14 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
-import { type Task } from "@shared/schema";
 import { TaskCard } from "@/components/task-card";
 import { EmptyState } from "@/components/empty-state";
 import { TaskCardSkeleton } from "@/components/loading-state";
 import { Archive as ArchiveIcon } from "lucide-react";
+import { useFilteredTasks } from "@/hooks/use-filtered-tasks";
 
 export default function Archive() {
-  const { data: tasks, isLoading } = useQuery<Task[]>({
-    queryKey: ["/api/tasks"],
-  });
+  const { data: tasks, isLoading } = useFilteredTasks();
 
   if (isLoading) {
     return (

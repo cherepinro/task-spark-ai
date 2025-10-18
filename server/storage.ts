@@ -10,11 +10,18 @@ import {
   aiInsights,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, or, ilike } from "drizzle-orm";
+
+export interface TaskFilters {
+  search?: string;
+  priority?: string;
+  status?: string;
+  projectId?: string;
+}
 
 export interface IStorage {
   // Task operations
-  getAllTasks(): Promise<Task[]>;
+  getAllTasks(filters?: TaskFilters): Promise<Task[]>;
   getTask(id: string): Promise<Task | undefined>;
   createTask(task: InsertTask): Promise<Task>;
   updateTask(id: string, task: Partial<InsertTask>): Promise<Task | undefined>;
@@ -33,8 +40,37 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   // Task operations
-  async getAllTasks(): Promise<Task[]> {
-    return await db.select().from(tasks).orderBy(desc(tasks.createdAt));
+  async getAllTasks(filters?: TaskFilters): Promise<Task[]> {
+    const conditions = [];
+    
+    if (filters?.search) {
+      conditions.push(
+        or(
+          ilike(tasks.title, `%${filters.search}%`),
+          ilike(tasks.description, `%${filters.search}%`)
+        )
+      );
+    }
+    
+    if (filters?.priority) {
+      conditions.push(eq(tasks.priority, filters.priority));
+    }
+    
+    if (filters?.status) {
+      conditions.push(eq(tasks.status, filters.status));
+    }
+    
+    if (filters?.projectId) {
+      conditions.push(eq(tasks.projectId, filters.projectId));
+    }
+    
+    const query = db.select().from(tasks);
+    
+    if (conditions.length > 0) {
+      return await query.where(and(...conditions)).orderBy(desc(tasks.createdAt));
+    }
+    
+    return await query.orderBy(desc(tasks.createdAt));
   }
 
   async getTask(id: string): Promise<Task | undefined> {
