@@ -6,16 +6,25 @@ import { TaskCard } from "@/components/task-card";
 import { EmptyState } from "@/components/empty-state";
 import { DashboardSkeleton } from "@/components/loading-state";
 import { TaskCreationModal } from "@/components/task-creation-modal";
+import { SaveTemplateDialog } from "@/components/save-template-dialog";
 import { CheckCircle2, Clock, TrendingUp, Sparkles, ListTodo, Plus } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useFilteredTasks } from "@/hooks/use-filtered-tasks";
+import { useSaveTemplate } from "@/hooks/use-save-template";
 
 export default function Dashboard() {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const { toast } = useToast();
+  const {
+    taskToSave,
+    dialogOpen,
+    setDialogOpen,
+    handleSaveAsTemplate,
+    handleSaveTemplate,
+  } = useSaveTemplate();
 
   const { data: tasks, isLoading: tasksLoading } = useFilteredTasks();
 
@@ -164,6 +173,7 @@ export default function Dashboard() {
                   task={task}
                   onToggleComplete={handleToggleComplete}
                   onDelete={(id) => deleteTaskMutation.mutate(id)}
+                  onSaveAsTemplate={handleSaveAsTemplate}
                 />
               ))}
             </div>
@@ -210,6 +220,13 @@ export default function Dashboard() {
         open={showTaskModal}
         onOpenChange={setShowTaskModal}
         onSubmit={handleCreateTask}
+      />
+
+      <SaveTemplateDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        task={taskToSave}
+        onSave={handleSaveTemplate}
       />
     </>
   );

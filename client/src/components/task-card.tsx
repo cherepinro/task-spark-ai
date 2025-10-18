@@ -18,6 +18,7 @@ interface TaskCardProps {
   onToggleComplete?: (taskId: string) => void;
   onEdit?: (task: Task) => void;
   onDelete?: (taskId: string) => void;
+  onSaveAsTemplate?: (task: Task) => void;
 }
 
 const priorityColors = {
@@ -37,6 +38,7 @@ export function TaskCard({
   onToggleComplete,
   onEdit,
   onDelete,
+  onSaveAsTemplate,
 }: TaskCardProps) {
   const isCompleted = task.status === "completed";
 
@@ -91,6 +93,12 @@ export function TaskCard({
                   data-testid={`button-edit-task-${task.id}`}
                 >
                   Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onSaveAsTemplate?.(task)}
+                  data-testid={`button-save-as-template-${task.id}`}
+                >
+                  Save as Template
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => onDelete?.(task.id)}

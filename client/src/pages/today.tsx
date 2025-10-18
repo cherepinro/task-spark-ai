@@ -5,16 +5,25 @@ import { TaskCard } from "@/components/task-card";
 import { EmptyState } from "@/components/empty-state";
 import { TaskCardSkeleton } from "@/components/loading-state";
 import { TaskCreationModal } from "@/components/task-creation-modal";
+import { SaveTemplateDialog } from "@/components/save-template-dialog";
 import { Calendar, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useFilteredTasks } from "@/hooks/use-filtered-tasks";
+import { useSaveTemplate } from "@/hooks/use-save-template";
 
 export default function Today() {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const { toast } = useToast();
+  const {
+    taskToSave,
+    dialogOpen,
+    setDialogOpen,
+    handleSaveAsTemplate,
+    handleSaveTemplate,
+  } = useSaveTemplate();
 
   const { data: tasks, isLoading } = useFilteredTasks();
 
@@ -108,6 +117,7 @@ export default function Today() {
                 task={task}
                 onToggleComplete={handleToggleComplete}
                 onDelete={(id) => deleteTaskMutation.mutate(id)}
+                onSaveAsTemplate={handleSaveAsTemplate}
               />
             ))}
           </div>
@@ -126,6 +136,13 @@ export default function Today() {
         open={showTaskModal}
         onOpenChange={setShowTaskModal}
         onSubmit={handleCreateTask}
+      />
+
+      <SaveTemplateDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        task={taskToSave}
+        onSave={handleSaveTemplate}
       />
     </>
   );
