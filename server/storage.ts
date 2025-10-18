@@ -5,8 +5,12 @@ import {
   type InsertProject,
   type AIInsight,
   type InsertAIInsight,
+  tasks,
+  projects,
+  aiInsights,
 } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Task operations
@@ -27,142 +31,75 @@ export interface IStorage {
   createInsight(insight: InsertAIInsight): Promise<AIInsight>;
 }
 
-export class MemStorage implements IStorage {
-  private tasks: Map<string, Task>;
-  private projects: Map<string, Project>;
-  private insights: Map<string, AIInsight>;
-
-  constructor() {
-    this.tasks = new Map();
-    this.projects = new Map();
-    this.insights = new Map();
-
-    this.seedInitialData();
-  }
-
-  private seedInitialData() {
-    const welcomeTask: Task = {
-      id: randomUUID(),
-      title: "Welcome to TaskSpark AI!",
-      description: "Explore the AI-powered task management features and get started with your productivity journey.",
-      priority: "high",
-      status: "todo",
-      dueDate: new Date(),
-      projectId: null,
-      isAISuggested: true,
-      aiCategory: "Getting Started",
-      completedAt: null,
-      createdAt: new Date(),
-    };
-    this.tasks.set(welcomeTask.id, welcomeTask);
-
-    const sampleInsight: AIInsight = {
-      id: randomUUID(),
-      type: "productivity",
-      title: "Great start!",
-      description: "You're off to a great start with TaskSpark AI. AI will analyze your tasks and provide personalized insights to boost your productivity.",
-      data: null,
-      createdAt: new Date(),
-    };
-    this.insights.set(sampleInsight.id, sampleInsight);
-  }
-
+export class DatabaseStorage implements IStorage {
   // Task operations
   async getAllTasks(): Promise<Task[]> {
-    return Array.from(this.tasks.values()).sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    return await db.select().from(tasks).orderBy(desc(tasks.createdAt));
   }
 
   async getTask(id: string): Promise<Task | undefined> {
-    return this.tasks.get(id);
+    const [task] = await db.select().from(tasks).where(eq(tasks.id, id));
+    return task || undefined;
   }
 
   async createTask(insertTask: InsertTask): Promise<Task> {
-    const id = randomUUID();
-    const task: Task = {
-      ...insertTask,
-      id,
-      description: insertTask.description || null,
-      dueDate: insertTask.dueDate || null,
-      projectId: insertTask.projectId || null,
-      isAISuggested: insertTask.isAISuggested || null,
-      aiCategory: insertTask.aiCategory || null,
-      completedAt: null,
-      createdAt: new Date(),
-    };
-    this.tasks.set(id, task);
+    const [task] = await db.insert(tasks).values(insertTask).returning();
     return task;
   }
 
   async updateTask(id: string, updates: Partial<InsertTask>): Promise<Task | undefined> {
-    const task = this.tasks.get(id);
-    if (!task) return undefined;
+    const updateData: any = { ...updates };
+    
+    // Handle completion timestamp
+    if (updates.status === "completed") {
+      updateData.completedAt = new Date();
+    } else if (updates.status) {
+      updateData.completedAt = null;
+    }
 
-    const updatedTask: Task = {
-      ...task,
-      ...updates,
-      completedAt:
-        updates.status === "completed" && task.status !== "completed"
-          ? new Date()
-          : updates.status !== "completed"
-          ? null
-          : task.completedAt,
-    };
-
-    this.tasks.set(id, updatedTask);
-    return updatedTask;
+    const [task] = await db
+      .update(tasks)
+      .set(updateData)
+      .where(eq(tasks.id, id))
+      .returning();
+    
+    return task || undefined;
   }
 
   async deleteTask(id: string): Promise<boolean> {
-    return this.tasks.delete(id);
+    const result = await db.delete(tasks).where(eq(tasks.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 
   // Project operations
   async getAllProjects(): Promise<Project[]> {
-    return Array.from(this.projects.values()).sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    return await db.select().from(projects).orderBy(desc(projects.createdAt));
   }
 
   async getProject(id: string): Promise<Project | undefined> {
-    return this.projects.get(id);
+    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    return project || undefined;
   }
 
   async createProject(insertProject: InsertProject): Promise<Project> {
-    const id = randomUUID();
-    const project: Project = {
-      ...insertProject,
-      id,
-      color: insertProject.color || "purple",
-      createdAt: new Date(),
-    };
-    this.projects.set(id, project);
+    const [project] = await db.insert(projects).values(insertProject).returning();
     return project;
   }
 
   async deleteProject(id: string): Promise<boolean> {
-    return this.projects.delete(id);
+    const result = await db.delete(projects).where(eq(projects.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 
   // AI Insight operations
   async getAllInsights(): Promise<AIInsight[]> {
-    return Array.from(this.insights.values()).sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    return await db.select().from(aiInsights).orderBy(desc(aiInsights.createdAt));
   }
 
   async createInsight(insertInsight: InsertAIInsight): Promise<AIInsight> {
-    const id = randomUUID();
-    const insight: AIInsight = {
-      ...insertInsight,
-      id,
-      data: insertInsight.data || null,
-      createdAt: new Date(),
-    };
-    this.insights.set(id, insight);
+    const [insight] = await db.insert(aiInsights).values(insertInsight).returning();
     return insight;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
