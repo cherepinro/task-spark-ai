@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import {
   insertTaskSchema,
+  updateTaskSchema,
   insertProjectSchema,
   type InsertTask,
   type Task,
@@ -61,15 +62,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/tasks/:id", async (req: Request, res: Response) => {
     try {
-      const updates = insertTaskSchema.partial().parse(req.body);
+      const updates = updateTaskSchema.parse(req.body);
       const task = await storage.updateTask(req.params.id, updates);
       if (!task) {
         return res.status(404).json({ error: "Task not found" });
       }
 
       // Handle recurring task: create next occurrence if task is completed
+      console.log("[Recurrence] Checking task:", {
+        id: task.id,
+        title: task.title,
+        isRecurring: task.isRecurring,
+        recurrencePattern: task.recurrencePattern,
+        status: task.status,
+        shouldCreate: shouldCreateNextOccurrence(task)
+      });
+      
       if (shouldCreateNextOccurrence(task)) {
         const nextDate = calculateNextOccurrence(task);
+        console.log("[Recurrence] Next occurrence date:", nextDate);
+        
         if (nextDate) {
           const nextTask: InsertTask = {
             title: task.title,
@@ -87,7 +99,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isAISuggested: task.isAISuggested || undefined,
             aiCategory: task.aiCategory || undefined,
           };
-          await storage.createTask(nextTask);
+          console.log("[Recurrence] Creating next task:", nextTask);
+          const createdTask = await storage.createTask(nextTask);
+          console.log("[Recurrence] Created task:", createdTask.id);
         }
       }
 

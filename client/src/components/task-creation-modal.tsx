@@ -166,7 +166,9 @@ export function TaskCreationModal({
                 name="dueDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Due Date</FormLabel>
+                    <FormLabel>
+                      Due Date{form.watch("isRecurring") && <span className="text-destructive"> *</span>}
+                    </FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -196,6 +198,11 @@ export function TaskCreationModal({
                         />
                       </PopoverContent>
                     </Popover>
+                    {form.watch("isRecurring") && !field.value && (
+                      <p className="text-xs text-muted-foreground">
+                        Required for recurring tasks
+                      </p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}

@@ -68,15 +68,17 @@ TaskSpark AI is an intelligent task management application powered by AI. It hel
 - `POST /api/ai/chat` - AI chat conversation
 
 ## Recent Changes
-- 2025-10-18: **AI Chat Integration Complete** - Natural language task creation now working
+- 2025-10-18: **Recurring Tasks Feature Complete** - Tasks automatically create next occurrence when completed
+  - Added database fields: isRecurring, recurrencePattern, recurrenceInterval, recurrenceEndDate, parentTaskId
+  - UI controls in task modal with validation (due date required for recurring tasks)
+  - Backend auto-generation of next occurrence with calculateNextOccurrence()
+  - Visual "Weekly/Daily/Monthly/Yearly" badges on recurring task cards
+- 2025-10-18: **AI Chat Integration Complete** - Natural language task creation working
 - 2025-10-18: Fixed critical bug in AI chat - apiRequest returns Response object, must call .json()
 - 2025-10-18: Simplified AI system prompts to avoid token limit issues (max_completion_tokens: 1000)
 - 2025-10-18: Migrated to PostgreSQL database with Drizzle ORM
 - 2025-10-18: Implemented search and filtering (by title, description, priority, status, project)
 - 2025-10-18: Added FilterContext for global filter state management
-- 2025-01-XX: Initial project setup with complete data schema, dark/light theme system
-- Created sidebar navigation with all main views
-- Added OpenAI integration via Replit AI Integrations
 
 ## Development Status
 - ✅ Phase 1: Schema & Frontend (Complete)
@@ -85,6 +87,14 @@ TaskSpark AI is an intelligent task management application powered by AI. It hel
 - ✅ Phase 4: Database Persistence (Complete)
 - ✅ Phase 5: Search & Filtering (Complete)
 - ✅ Phase 6: AI Chat Integration (Complete)
+- ✅ Phase 7: Recurring Tasks (Complete)
+
+## Next Features
+- Task collaboration & sharing
+- Advanced analytics dashboard
+- Task templates
+- File attachments
+- Subtasks & dependencies
 
 ## Implemented Features
 - ✅ Complete task management with CRUD operations

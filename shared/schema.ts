@@ -54,7 +54,7 @@ export const projectsRelations = relations(projects, ({ many }) => ({
   tasks: many(tasks),
 }));
 
-export const insertTaskSchema = createInsertSchema(tasks).omit({
+const baseTaskSchema = createInsertSchema(tasks).omit({
   id: true,
   createdAt: true,
 }).extend({
@@ -63,7 +63,24 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({
   status: z.enum(["todo", "in-progress", "completed", "archived"]).default("todo"),
   recurrencePattern: z.enum(["daily", "weekly", "monthly", "yearly"]).optional(),
   recurrenceInterval: z.string().optional(),
+  // Transform date strings from JSON to Date objects
+  dueDate: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional(),
+  completedAt: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional(),
+  recurrenceEndDate: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional(),
 });
+
+export const insertTaskSchema = baseTaskSchema.refine((data) => {
+  // If task is recurring, due date is required
+  if (data.isRecurring && !data.dueDate) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Due date is required for recurring tasks",
+  path: ["dueDate"],
+});
+
+export const updateTaskSchema = baseTaskSchema.partial();
 
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
