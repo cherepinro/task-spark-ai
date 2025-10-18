@@ -6,6 +6,7 @@ import {
   Sparkles,
   Archive,
   Plus,
+  FileCode2,
 } from "lucide-react";
 import {
   Sidebar,
@@ -47,6 +48,11 @@ const navigationItems = [
     title: "AI Insights",
     url: "/insights",
     icon: Sparkles,
+  },
+  {
+    title: "Templates",
+    url: "/templates",
+    icon: FileCode2,
   },
   {
     title: "Archive",

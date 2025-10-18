@@ -20,6 +20,7 @@ import Today from "@/pages/today";
 import Upcoming from "@/pages/upcoming";
 import Projects from "@/pages/projects";
 import Insights from "@/pages/insights";
+import Templates from "@/pages/templates";
 import Archive from "@/pages/archive";
 import NotFound from "@/pages/not-found";
 import { useMutation } from "@tanstack/react-query";
@@ -35,6 +36,7 @@ function Router() {
       <Route path="/upcoming" component={Upcoming} />
       <Route path="/projects" component={Projects} />
       <Route path="/insights" component={Insights} />
+      <Route path="/templates" component={Templates} />
       <Route path="/archive" component={Archive} />
       <Route component={NotFound} />
     </Switch>
