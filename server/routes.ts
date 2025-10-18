@@ -15,6 +15,7 @@ import {
   chatWithAI,
   type ChatMessage,
 } from "./services/ai.service";
+import { calculateNextOccurrence, shouldCreateNextOccurrence } from "./utils/recurrence";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Task routes
@@ -65,6 +66,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!task) {
         return res.status(404).json({ error: "Task not found" });
       }
+
+      // Handle recurring task: create next occurrence if task is completed
+      if (shouldCreateNextOccurrence(task)) {
+        const nextDate = calculateNextOccurrence(task);
+        if (nextDate) {
+          const nextTask: InsertTask = {
+            title: task.title,
+            description: task.description || undefined,
+            priority: task.priority as "low" | "medium" | "high",
+            status: "todo",
+            dueDate: nextDate,
+            projectId: task.projectId || undefined,
+            isRecurring: task.isRecurring || undefined,
+            recurrencePattern: (task.recurrencePattern as "daily" | "weekly" | "monthly" | "yearly") || undefined,
+            recurrenceInterval: task.recurrenceInterval || undefined,
+            recurrenceEndDate: task.recurrenceEndDate || undefined,
+            recurrenceEndCount: task.recurrenceEndCount || undefined,
+            parentTaskId: task.id,
+            isAISuggested: task.isAISuggested || undefined,
+            aiCategory: task.aiCategory || undefined,
+          };
+          await storage.createTask(nextTask);
+        }
+      }
+
       res.json(task);
     } catch (error) {
       if (error instanceof z.ZodError) {
