@@ -12,6 +12,8 @@ import {
   analyzeTask,
   parseNaturalLanguageTask,
   generateProductivityInsight,
+  chatWithAI,
+  type ChatMessage,
 } from "./services/ai.service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -174,6 +176,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(insight);
     } catch (error) {
       res.status(500).json({ error: "Failed to generate insight" });
+    }
+  });
+
+  // AI Chat endpoint
+  app.post("/api/ai/chat", async (req: Request, res: Response) => {
+    try {
+      const { message, conversationHistory } = req.body;
+      
+      if (!message || typeof message !== "string") {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      const history: ChatMessage[] = conversationHistory || [];
+      const tasks = await storage.getAllTasks();
+      
+      const response = await chatWithAI(message, history, tasks);
+      
+      res.json(response);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to process chat message" });
     }
   });
 

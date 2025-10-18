@@ -145,3 +145,58 @@ Return as JSON with keys: title, description`;
     };
   }
 }
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface ChatResponse {
+  message: string;
+  taskSuggestion?: ParsedTask;
+}
+
+export async function chatWithAI(
+  message: string,
+  conversationHistory: ChatMessage[],
+  tasks: any[]
+): Promise<ChatResponse> {
+  const taskSummary = tasks.length > 0 
+    ? tasks.slice(0, 3).map(t => `${t.title} (${t.priority}, ${t.status})`).join(', ')
+    : "no tasks";
+
+  const systemPrompt = `You are TaskSpark AI, a task management assistant. Current tasks: ${taskSummary}. Be concise and helpful.`;
+
+  // Filter out any messages with invalid content
+  const validHistory = conversationHistory.filter(
+    (msg) => msg.content && typeof msg.content === "string" && msg.content.trim() !== ""
+  );
+
+  const messages: any[] = [
+    { role: "system", content: systemPrompt },
+    ...validHistory,
+    { role: "user", content: message },
+  ];
+
+  const response = await openai.chat.completions.create({
+    model: MODEL,
+    messages,
+    max_completion_tokens: 1000,
+  });
+
+  const aiMessage = response.choices[0]?.message?.content || "I'm here to help with your tasks!";
+
+  // Check if the message contains a task creation intent
+  const taskKeywords = ["create task", "add task", "new task", "remind me to", "i need to", "todo"];
+  const containsTaskIntent = taskKeywords.some(keyword => message.toLowerCase().includes(keyword));
+
+  let taskSuggestion: ParsedTask | undefined;
+  if (containsTaskIntent) {
+    taskSuggestion = await parseNaturalLanguageTask(message);
+  }
+
+  return {
+    message: aiMessage,
+    taskSuggestion,
+  };
+}

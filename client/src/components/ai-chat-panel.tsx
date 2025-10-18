@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Sparkles, Send, X } from "lucide-react";
+import { Sparkles, Send, X, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   id: string;
@@ -29,9 +31,10 @@ export function AIChatPanel({ open, onOpenChange }: AIChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -41,24 +44,74 @@ export function AIChatPanel({ open, onOpenChange }: AIChatPanelProps) {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const messageToSend = input;
     setInput("");
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const conversationHistory = messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      const res = await apiRequest("POST", "/api/ai/chat", {
+        message: messageToSend,
+        conversationHistory,
+      });
+      const response = await res.json();
+
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "I'm here to help you manage your tasks more effectively. This feature will be connected to AI once the backend is ready.",
+        content: response.message || "Sorry, I didn't get a response.",
         timestamp: new Date(),
       };
+
       setMessages((prev) => [...prev, aiMessage]);
+
+      // If AI suggested a task, create it
+      if (response.taskSuggestion) {
+        try {
+          await apiRequest("POST", "/api/tasks", {
+            title: response.taskSuggestion.title,
+            description: response.taskSuggestion.description,
+            priority: response.taskSuggestion.priority,
+            status: "todo",
+          });
+
+          queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+
+          toast({
+            title: "Task created!",
+            description: `Created: ${response.taskSuggestion.title}`,
+          });
+        } catch (error) {
+          console.error("Failed to create suggested task:", error);
+        }
+      }
+    } catch (error) {
+      console.error("Chat error:", error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "I apologize, but I'm having trouble responding right now. Please try again.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
-  const handlePromptClick = (prompt: string) => {
+  const handlePromptClick = async (prompt: string) => {
     setInput(prompt);
+    // Auto-send the suggested prompt
+    setTimeout(() => {
+      const sendButton = document.querySelector('[data-testid="button-send-message"]') as HTMLButtonElement;
+      if (sendButton) {
+        sendButton.click();
+      }
+    }, 100);
   };
 
   return (
