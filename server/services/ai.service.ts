@@ -200,3 +200,70 @@ export async function chatWithAI(
     taskSuggestion,
   };
 }
+
+export interface DecomposedTask {
+  title: string;
+  hours: number;
+}
+
+export interface DecomposeResponse {
+  tasks: DecomposedTask[];
+  tokensUsed: number;
+}
+
+export async function decomposeTask(title: string): Promise<DecomposeResponse> {
+  try {
+    const prompt = `Split this task into 3-7 smaller subtasks with estimated hours. Return as a markdown checklist:
+"${title}"
+
+Format each line as: - [ ] Task description (Xh)
+Where X is the estimated hours (can be decimal like 2.5h).
+
+Example:
+- [ ] Research requirements (2h)
+- [ ] Design UI mockups (4h)
+- [ ] Implement frontend (8h)
+
+Return ONLY the checklist, no other text.`;
+
+    const response = await openai.chat.completions.create({
+      model: MODEL,
+      messages: [{ role: "user", content: prompt }],
+      max_completion_tokens: 1000,
+    });
+
+    const content = response.choices[0]?.message?.content || "";
+    const tokensUsed = response.usage?.total_tokens || 0;
+
+    const tasks = parseMarkdownChecklist(content);
+
+    return {
+      tasks,
+      tokensUsed,
+    };
+  } catch (error) {
+    console.error("Task decomposition error:", error);
+    throw new Error("Failed to decompose task");
+  }
+}
+
+function parseMarkdownChecklist(markdown: string): DecomposedTask[] {
+  const lines = markdown.trim().split('\n');
+  const tasks: DecomposedTask[] = [];
+
+  for (const line of lines) {
+    const checkboxMatch = line.match(/^-\s*\[[\sx]\]\s*(.+?)(?:\s*\((\d+(?:\.\d+)?)h\))?$/i);
+    
+    if (checkboxMatch) {
+      const title = checkboxMatch[1].trim();
+      const hoursStr = checkboxMatch[2];
+      const hours = hoursStr ? parseFloat(hoursStr) : 1;
+      
+      if (title) {
+        tasks.push({ title, hours });
+      }
+    }
+  }
+
+  return tasks;
+}
