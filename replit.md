@@ -63,6 +63,7 @@ TaskSpark AI is an intelligent task management application powered by AI, availa
 ### API Routes
 - `GET /api/tasks?search=&priority=&status=&projectId=` - Get tasks with optional filters
 - `POST /api/tasks` - Create new task
+- `POST /api/tasks/bulk-import` - Import multiple tasks from markdown checklist
 - `PATCH /api/tasks/:id` - Update task
 - `DELETE /api/tasks/:id` - Delete task
 - `GET /api/projects` - Get all projects
@@ -72,14 +73,22 @@ TaskSpark AI is an intelligent task management application powered by AI, availa
 - `POST /api/ai/suggest` - Get AI suggestions for task
 - `POST /api/ai/parse` - Parse natural language into task
 - `POST /api/ai/chat` - AI chat conversation
-- `POST /api/ai/decompose` - AI task decomposition (NEW: splits task into 3-7 subtasks with hours)
+- `POST /api/ai/decompose` - AI task decomposition (splits task into 3-7 subtasks with hours)
 - `GET /api/templates` - Get all task templates
 - `POST /api/templates` - Create new task template
 - `DELETE /api/templates/:id` - Delete task template
 - `POST /api/templates/:id/create-task` - Create task from template
-- `GET /docs` - Swagger API documentation (NEW)
+- `GET /docs` - Swagger API documentation
 
 ## Recent Changes
+- 2025-10-19: **Bulk Task Import from Checklist** - Import multiple tasks at once from markdown format
+  - POST /api/tasks/bulk-import endpoint accepting markdown checklist format
+  - BulkImportDialog component with live task count preview
+  - "Import Checklist" button on Dashboard with ListChecks icon
+  - Supports format: `- [ ] Task name (Xh)` with optional hours notation
+  - Default priority and project selection for all imported tasks
+  - Success toast showing count of imported tasks
+  - Full E2E test coverage with Playwright
 - 2025-10-19: **Task Breakdown UI Feature** - Full frontend integration for AI task decomposition
   - "Breakdown Task" menu item in task cards with Zap icon
   - One-click task decomposition available on Dashboard, Today, and Upcoming pages
@@ -155,6 +164,7 @@ TaskSpark AI is an intelligent task management application powered by AI, availa
 
 ## Implemented Features
 - ✅ **Native Android Mobile App** - Full Capacitor integration with same codebase
+- ✅ **Bulk Task Import from Checklist** - Paste markdown checklists to create multiple tasks instantly
 - ✅ Complete task management with CRUD operations
 - ✅ PostgreSQL database persistence with Drizzle ORM
 - ✅ Real-time search and filtering (by title/description, priority, status, project)
