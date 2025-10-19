@@ -97,14 +97,15 @@ export function TaskCard({
                 >
                   Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onBreakdown?.(task)}
-                  data-testid={`button-breakdown-task-${task.id}`}
-                  disabled={isCompleted}
-                >
-                  <Zap className="h-4 w-4 mr-2 text-primary" />
-                  Breakdown Task
-                </DropdownMenuItem>
+                {!isCompleted && onBreakdown && (
+                  <DropdownMenuItem
+                    onClick={() => onBreakdown(task)}
+                    data-testid={`button-breakdown-task-${task.id}`}
+                  >
+                    <Zap className="h-4 w-4 mr-2 text-primary" />
+                    Breakdown Task
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => onSaveAsTemplate?.(task)}
