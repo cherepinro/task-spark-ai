@@ -8,6 +8,7 @@ import { DashboardSkeleton } from "@/components/loading-state";
 import { TaskCreationModal } from "@/components/task-creation-modal";
 import { SaveTemplateDialog } from "@/components/save-template-dialog";
 import { BulkImportDialog } from "@/components/bulk-import-dialog";
+import { UsageWidget } from "@/components/usage-widget";
 import { CheckCircle2, Clock, TrendingUp, Sparkles, ListTodo, Plus, ListChecks } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -182,6 +183,9 @@ export default function Dashboard() {
             </Card>
           </div>
         </div>
+
+        {/* Usage Limits */}
+        <UsageWidget />
 
         {/* Today's Focus */}
         <div>
