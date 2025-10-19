@@ -8,35 +8,51 @@ const CACHE_TTL = {
   TEMPLATES: 30 * 60,   // 30 minutes
 };
 
+// Define cache namespaces to prevent collisions
+const CACHE_NAMESPACE = {
+  DATA_TASKS: 'data:tasks',
+  DATA_PROJECTS: 'data:projects',
+  DATA_INSIGHTS: 'data:insights',
+  DATA_TEMPLATES: 'data:templates',
+  AI_DECOMPOSE: 'ai:decompose',
+  AI_REORGANIZE: 'ai:reorganize',
+  AI_DAY_PLAN: 'ai:dayplan',
+} as const;
+
+export interface TaskFilters {
+  search?: string;
+  priority?: string;
+  status?: string;
+  projectId?: string;
+}
+
 export const dataCacheService = {
-  // Generate cache keys
-  generateTasksKey: (filters?: { search?: string; priority?: string; status?: string; projectId?: string }) => {
+  // Generate cache keys with proper namespacing
+  generateTasksKey: (filters?: TaskFilters) => {
     const key = filters ? md5(JSON.stringify(filters)) : 'all';
-    return `tasks:${key}`;
+    return `${CACHE_NAMESPACE.DATA_TASKS}:${key}`;
   },
 
-  generateProjectsKey: () => 'projects:all',
+  generateProjectsKey: () => `${CACHE_NAMESPACE.DATA_PROJECTS}:all`,
   
-  generateInsightsKey: () => 'insights:all',
+  generateInsightsKey: () => `${CACHE_NAMESPACE.DATA_INSIGHTS}:all`,
   
-  generateTemplatesKey: () => 'templates:all',
+  generateTemplatesKey: () => `${CACHE_NAMESPACE.DATA_TEMPLATES}:all`,
 
   // Tasks caching
-  getTasks: <T>(filters?: any): T | undefined => {
+  getTasks: <T>(filters?: TaskFilters): T | undefined => {
     const key = dataCacheService.generateTasksKey(filters);
     return cacheService.get<T>(key);
   },
 
-  setTasks: <T>(data: T, filters?: any): boolean => {
+  setTasks: <T>(data: T, filters?: TaskFilters): boolean => {
     const key = dataCacheService.generateTasksKey(filters);
     return cacheService.set(key, data, CACHE_TTL.TASKS);
   },
 
   invalidateTasks: (): void => {
-    // Clear all task caches by clearing the entire cache
-    // Since we don't have direct access to cache keys, we flush all
-    // This is acceptable as caches will rebuild quickly
-    cacheService.flush();
+    // Selectively clear only task-related caches using pattern matching
+    cacheService.deleteByPattern(new RegExp(`^${CACHE_NAMESPACE.DATA_TASKS}:`));
   },
 
   // Projects caching
@@ -49,8 +65,9 @@ export const dataCacheService = {
   },
 
   invalidateProjects: (): void => {
-    // Clear all caches since tasks reference projects
-    cacheService.flush();
+    // Clear project caches and task caches (since tasks reference projects)
+    cacheService.deleteByPattern(new RegExp(`^${CACHE_NAMESPACE.DATA_PROJECTS}:`));
+    cacheService.deleteByPattern(new RegExp(`^${CACHE_NAMESPACE.DATA_TASKS}:`));
   },
 
   // Insights caching
@@ -90,11 +107,11 @@ export const dataCacheService = {
     };
   },
 
-  // Clear all data caches
+  // Clear all data caches (only data namespace, not AI caches)
   clearAll: (): void => {
-    dataCacheService.invalidateTasks();
-    dataCacheService.invalidateProjects();
-    dataCacheService.invalidateInsights();
-    dataCacheService.invalidateTemplates();
+    cacheService.deleteByPattern(/^data:/);
   },
 };
+
+// Export cache namespace for use in AI service
+export { CACHE_NAMESPACE };

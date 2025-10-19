@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import type { InsertTask } from "@shared/schema";
+import { CACHE_NAMESPACE } from './data-cache.service';
 
 /*
 Follow these instructions when using this blueprint:
