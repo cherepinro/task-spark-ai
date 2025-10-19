@@ -20,6 +20,7 @@ import {
 } from "./services/ai.service";
 import { checkQuota, incrementQuota } from "./services/quota.service";
 import { cacheService } from "./services/cache.service";
+import { dataCacheService } from "./services/data-cache.service";
 import md5 from "md5";
 import { calculateNextOccurrence, shouldCreateNextOccurrence } from "./utils/recurrence";
 
@@ -33,7 +34,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: req.query.status as string | undefined,
         projectId: req.query.projectId as string | undefined,
       };
+      
+      // Try to get from cache first
+      const cached = dataCacheService.getTasks<Task[]>(filters);
+      if (cached) {
+        res.setHeader('X-Cache', 'HIT');
+        return res.json(cached);
+      }
+      
+      // Cache miss - fetch from database
       const tasks = await storage.getAllTasks(filters);
+      dataCacheService.setTasks(tasks, filters);
+      res.setHeader('X-Cache', 'MISS');
       res.json(tasks);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch tasks" });
@@ -56,6 +68,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertTaskSchema.parse(req.body);
       const task = await storage.createTask(validatedData);
+      
+      // Invalidate tasks cache
+      dataCacheService.invalidateTasks();
+      
       res.status(201).json(task);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -110,6 +126,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Invalidate tasks cache
+      dataCacheService.invalidateTasks();
+      
       res.json(task);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -125,6 +144,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!deleted) {
         return res.status(404).json({ error: "Task not found" });
       }
+      
+      // Invalidate tasks cache
+      dataCacheService.invalidateTasks();
+      
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete task" });
@@ -134,7 +157,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Project routes
   app.get("/api/projects", async (_req: Request, res: Response) => {
     try {
+      // Try cache first
+      const cached = dataCacheService.getProjects();
+      if (cached) {
+        res.setHeader('X-Cache', 'HIT');
+        return res.json(cached);
+      }
+      
+      // Cache miss
       const projects = await storage.getAllProjects();
+      dataCacheService.setProjects(projects);
+      res.setHeader('X-Cache', 'MISS');
       res.json(projects);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch projects" });
@@ -145,6 +178,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertProjectSchema.parse(req.body);
       const project = await storage.createProject(validatedData);
+      
+      // Invalidate projects cache
+      dataCacheService.invalidateProjects();
+      
       res.status(201).json(project);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -160,6 +197,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!deleted) {
         return res.status(404).json({ error: "Project not found" });
       }
+      
+      // Invalidate projects cache
+      dataCacheService.invalidateProjects();
+      
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete project" });
@@ -169,7 +210,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Insights routes
   app.get("/api/insights", async (_req: Request, res: Response) => {
     try {
+      // Try cache first
+      const cached = dataCacheService.getInsights();
+      if (cached) {
+        res.setHeader('X-Cache', 'HIT');
+        return res.json(cached);
+      }
+      
+      // Cache miss
       const insights = await storage.getAllInsights();
+      dataCacheService.setInsights(insights);
+      res.setHeader('X-Cache', 'MISS');
       res.json(insights);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch insights" });
@@ -217,6 +268,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: insight.description,
         data: null,
       });
+
+      // Invalidate insights cache
+      dataCacheService.invalidateInsights();
 
       res.json(insight);
     } catch (error) {
@@ -309,6 +363,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Cache the result
       cacheService.set(cacheKey, response);
 
+      // Invalidate tasks cache since we created new tasks
+      dataCacheService.invalidateTasks();
+
       res.json(response);
     } catch (error) {
       console.error("Task decomposition error:", error);
@@ -319,7 +376,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Task Template routes
   app.get("/api/templates", async (_req: Request, res: Response) => {
     try {
+      // Try cache first
+      const cached = dataCacheService.getTemplates();
+      if (cached) {
+        res.setHeader('X-Cache', 'HIT');
+        return res.json(cached);
+      }
+      
+      // Cache miss
       const templates = await storage.getAllTemplates();
+      dataCacheService.setTemplates(templates);
+      res.setHeader('X-Cache', 'MISS');
       res.json(templates);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch templates" });
@@ -342,6 +409,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertTaskTemplateSchema.parse(req.body);
       const template = await storage.createTemplate(validatedData);
+      
+      // Invalidate templates cache
+      dataCacheService.invalidateTemplates();
+      
       res.status(201).json(template);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -358,6 +429,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!template) {
         return res.status(404).json({ error: "Template not found" });
       }
+      
+      // Invalidate templates cache
+      dataCacheService.invalidateTemplates();
+      
       res.json(template);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -373,6 +448,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!success) {
         return res.status(404).json({ error: "Template not found" });
       }
+      
+      // Invalidate templates cache
+      dataCacheService.invalidateTemplates();
+      
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete template" });
@@ -403,9 +482,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const task = await storage.createTask(taskData);
+      
+      // Invalidate tasks cache
+      dataCacheService.invalidateTasks();
+      
       res.status(201).json(task);
     } catch (error) {
       res.status(500).json({ error: "Failed to create task from template" });
+    }
+  });
+
+  // Cache statistics endpoint
+  app.get("/api/cache/stats", (_req: Request, res: Response) => {
+    try {
+      const stats = dataCacheService.getStats();
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch cache stats" });
+    }
+  });
+
+  // Clear all caches endpoint (for debugging/admin)
+  app.post("/api/cache/clear", (_req: Request, res: Response) => {
+    try {
+      dataCacheService.clearAll();
+      res.json({ message: "All caches cleared successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to clear caches" });
     }
   });
 
