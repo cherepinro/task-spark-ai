@@ -29,6 +29,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { InsertTask } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 function Router() {
   return (
@@ -159,6 +160,9 @@ function AppContent() {
 }
 
 export default function App() {
+  // Initialize push notifications on app start
+  usePushNotifications();
+  
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark">

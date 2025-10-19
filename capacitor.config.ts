@@ -20,7 +20,13 @@ const config: CapacitorConfig = {
       style: 'dark',
       backgroundColor: '#000000',
     },
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert'],
+    },
   },
+  // Deep linking configuration for opening specific tasks
+  // Format: taskspark://task/{taskId}
+  // Configured in AndroidManifest.xml
 };
 
 export default config;
