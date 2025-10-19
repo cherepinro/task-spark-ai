@@ -1,6 +1,7 @@
 import { db } from "../db";
 import { sessions } from "@shared/schema";
 import { sql } from "drizzle-orm";
+import { sign } from "cookie-signature";
 
 /**
  * Test user credentials
@@ -35,7 +36,7 @@ export async function createTestSession(userId: string = TEST_USER.id): Promise<
           email: TEST_USER.email,
           name: TEST_USER.name,
         },
-        expires_at: Math.floor(expiresAt.getTime() / 1000),
+        expires_at: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60),
       },
     },
   };
@@ -50,13 +51,16 @@ export async function createTestSession(userId: string = TEST_USER.id): Promise<
 }
 
 /**
- * Get session cookie for browser
+ * Get signed session cookie for browser
  * Returns the cookie object that should be set in the browser
  */
-export function getSessionCookie(sessionId: string, domain: string) {
+export function getSessionCookie(sessionId: string, domain: string = "localhost") {
+  const secret = process.env.SESSION_SECRET!;
+  const signedValue = `s:${sign(sessionId, secret)}`;
+  
   return {
     name: "connect.sid",
-    value: `s:${sessionId}`,
+    value: signedValue,
     domain,
     path: "/",
     httpOnly: true,
@@ -70,4 +74,11 @@ export function getSessionCookie(sessionId: string, domain: string) {
  */
 export async function cleanupTestSession(sessionId: string) {
   await db.delete(sessions).where(sql`sid = ${sessionId}`);
+}
+
+/**
+ * Get all test sessions (for cleanup)
+ */
+export async function cleanupAllTestSessions() {
+  await db.delete(sessions).where(sql`sid LIKE 'test-session-%'`);
 }
