@@ -15,8 +15,12 @@ import {
   parseNaturalLanguageTask,
   generateProductivityInsight,
   chatWithAI,
+  decomposeTask,
   type ChatMessage,
 } from "./services/ai.service";
+import { checkQuota, incrementQuota } from "./services/quota.service";
+import { cacheService } from "./services/cache.service";
+import md5 from "md5";
 import { calculateNextOccurrence, shouldCreateNextOccurrence } from "./utils/recurrence";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -237,6 +241,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(response);
     } catch (error) {
       res.status(500).json({ error: "Failed to process chat message" });
+    }
+  });
+
+  // AI Task Decomposition endpoint
+  app.post("/api/ai/decompose", async (req: Request, res: Response) => {
+    try {
+      const { title } = req.body;
+      
+      if (!title || typeof title !== "string") {
+        return res.status(400).json({ error: "Task title is required" });
+      }
+
+      // Check quota
+      const userId = "default"; // TODO: Replace with actual user ID when auth is implemented
+      const quotaCheck = await checkQuota(userId);
+      
+      if (!quotaCheck.allowed) {
+        return res.status(429).json({ 
+          error: "Monthly quota exceeded",
+          remainingQuota: quotaCheck.remaining,
+          callCount: quotaCheck.callCount,
+        });
+      }
+
+      // Check cache
+      const cacheKey = md5(title.toLowerCase().trim());
+      const cached = cacheService.get<any>(cacheKey);
+      
+      if (cached) {
+        return res.json({
+          ...cached,
+          fromCache: true,
+          remainingQuota: quotaCheck.remaining - 1,
+        });
+      }
+
+      // Call OpenAI to decompose task
+      const result = await decomposeTask(title);
+      
+      // Save decomposed tasks to database
+      const savedTasks = await Promise.all(
+        result.tasks.map(async (task) => {
+          return await storage.createTask({
+            title: task.title,
+            priority: "medium",
+            status: "todo",
+            hours: task.hours.toString(),
+          });
+        })
+      );
+
+      // Increment quota
+      await incrementQuota(userId);
+
+      // Prepare response
+      const response = {
+        tasks: savedTasks.map((task) => ({
+          id: task.id,
+          title: task.title,
+          hours: parseFloat(task.hours || "0"),
+        })),
+        tokensUsed: result.tokensUsed,
+        remainingQuota: quotaCheck.remaining - 1,
+      };
+
+      // Cache the result
+      cacheService.set(cacheKey, response);
+
+      res.json(response);
+    } catch (error) {
+      console.error("Task decomposition error:", error);
+      res.status(500).json({ error: "Failed to decompose task" });
     }
   });
 
