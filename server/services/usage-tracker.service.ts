@@ -7,6 +7,7 @@ export const USAGE_LIMITS = {
   ai_decompose: { monthly: 5, label: "AI Task Breakdown" },
   bulk_import: { monthly: 20, label: "Bulk Task Import" },
   ai_chat: { monthly: 50, label: "AI Chat Messages" },
+  day_plan: { daily: 1, label: "AI Day Planner" },
   tasks: { total: 500, label: "Total Tasks" },
   projects: { total: 50, label: "Total Projects" },
 } as const;
@@ -26,6 +27,32 @@ export async function checkUsage(
   userId: string = "default"
 ): Promise<UsageCheck> {
   const limit = USAGE_LIMITS[featureType];
+  
+  // For daily limits (day_plan)
+  if ('daily' in limit) {
+    const currentDay = getCurrentDay();
+    
+    const existingQuota = await db
+      .select()
+      .from(quotaUsage)
+      .where(and(
+        eq(quotaUsage.userId, userId),
+        eq(quotaUsage.featureType, featureType),
+        eq(quotaUsage.month, currentDay) // Reusing month column for day tracking
+      ))
+      .limit(1);
+
+    const used = existingQuota.length > 0 ? existingQuota[0].callCount : 0;
+    const remaining = Math.max(0, limit.daily - used);
+
+    return {
+      allowed: used < limit.daily,
+      remaining,
+      used,
+      limit: limit.daily,
+      feature: limit.label,
+    };
+  }
   
   // For monthly limits (ai_decompose, bulk_import, ai_chat)
   if ('monthly' in limit) {
@@ -83,13 +110,15 @@ export async function incrementUsage(
   featureType: FeatureType,
   userId: string = "default"
 ): Promise<void> {
-  // Only increment for monthly-limited features
   const limit = USAGE_LIMITS[featureType];
-  if (!('monthly' in limit)) {
+  
+  // Skip for total-limited features
+  if ('total' in limit) {
     return; // Total-limited features are counted from actual DB records
   }
 
-  const currentMonth = getCurrentMonth();
+  // Use appropriate time period (day or month)
+  const timePeriod = 'daily' in limit ? getCurrentDay() : getCurrentMonth();
   
   const existingQuota = await db
     .select()
@@ -97,7 +126,7 @@ export async function incrementUsage(
     .where(and(
       eq(quotaUsage.userId, userId),
       eq(quotaUsage.featureType, featureType),
-      eq(quotaUsage.month, currentMonth)
+      eq(quotaUsage.month, timePeriod) // Reusing month column for both
     ))
     .limit(1);
 
@@ -115,14 +144,14 @@ export async function incrementUsage(
       .values({
         userId,
         featureType,
-        month: currentMonth,
+        month: timePeriod,
         callCount: 1,
       });
   }
 }
 
 export async function getAllUsage(userId: string = "default"): Promise<Record<FeatureType, UsageCheck>> {
-  const features: FeatureType[] = ['ai_decompose', 'bulk_import', 'ai_chat', 'tasks', 'projects'];
+  const features: FeatureType[] = ['ai_decompose', 'bulk_import', 'ai_chat', 'day_plan', 'tasks', 'projects'];
   
   const usageData = await Promise.all(
     features.map(async (feature) => ({
@@ -142,4 +171,12 @@ function getCurrentMonth(): string {
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   return `${year}-${month}`;
+}
+
+function getCurrentDay(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
