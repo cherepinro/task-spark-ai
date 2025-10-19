@@ -63,6 +63,30 @@ export default function Today() {
     },
   });
 
+  const breakdownTaskMutation = useMutation({
+    mutationFn: async (title: string) => {
+      const response = await apiRequest("POST", "/api/ai/decompose", { title });
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      const taskCount = data.tasks?.length || 0;
+      const totalHours = data.tasks?.reduce((sum: number, t: any) => sum + (t.hours || 0), 0) || 0;
+      toast({
+        title: "Task broken down successfully! ⚡",
+        description: `Created ${taskCount} subtasks (${totalHours}h total). Remaining quota: ${data.remainingQuota}/5`,
+      });
+    },
+    onError: (error: any) => {
+      const message = error.message || "Failed to breakdown task";
+      toast({
+        title: "Breakdown failed",
+        description: message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleToggleComplete = (taskId: string) => {
     const task = tasks?.find((t) => t.id === taskId);
     if (task) {
@@ -73,6 +97,10 @@ export default function Today() {
   const handleCreateTask = async (data: InsertTask) => {
     await createTaskMutation.mutateAsync(data);
     setShowTaskModal(false);
+  };
+
+  const handleBreakdownTask = (task: any) => {
+    breakdownTaskMutation.mutate(task.title);
   };
 
   if (isLoading) {
@@ -118,6 +146,7 @@ export default function Today() {
                 onToggleComplete={handleToggleComplete}
                 onDelete={(id) => deleteTaskMutation.mutate(id)}
                 onSaveAsTemplate={handleSaveAsTemplate}
+                onBreakdown={handleBreakdownTask}
               />
             ))}
           </div>
