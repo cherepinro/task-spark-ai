@@ -97,8 +97,79 @@ TaskSpark AI implements **Firebase Cloud Messaging (FCM)** push notifications fo
 
 The notification service includes automatic detection and cleanup of invalid tokens, multicast messaging for sending to multiple devices, and integration with the task management system to send timely reminders.
 
+## User Authentication & Authorization (PROMPT-14)
+TaskSpark AI implements **Replit Auth** for secure user authentication with role-based access control:
+
+- **Authentication System**:
+  - `server/replitAuth.ts` - Replit Auth integration using OpenID Connect (OIDC)
+  - Supports multiple login providers: Google, GitHub, X (Twitter), Apple, Email
+  - Session management using PostgreSQL with `connect-pg-simple`
+  - Automatic token refresh with refresh tokens
+  - `isAuthenticated` middleware for protecting routes
+  - `requiresAIAccess` middleware for role-based access control
+
+- **Database Schema**:
+  - `users` table - Stores user profiles with role fields:
+    - `id`: Unique user identifier from auth provider
+    - `email`: User email address
+    - `name`: User display name
+    - `avatarUrl`: Profile picture URL
+    - `isAdmin`: Admin privileges flag (default: false)
+    - `hasAIAccess`: AI features access flag (default: true)
+    - `pushNotificationsEnabled`: Push notification preference (default: true)
+  - `sessions` table - PostgreSQL session store for express-session
+
+- **Role-Based Access Control**:
+  - All API endpoints require authentication via `isAuthenticated` middleware
+  - AI endpoints protected with `requiresAIAccess` middleware:
+    - `/api/ai/suggest`, `/api/ai/parse`, `/api/ai/chat`
+    - `/api/ai/decompose`, `/api/ai/day-plan`, `/api/ai/reorganize`
+    - `/api/ai/generate-insight`
+  - Admin endpoints require `isAdmin` flag for user management
+  - All routes use authenticated user ID (`req.user.claims.sub`) for user-specific data
+
+- **Frontend Authentication**:
+  - `client/src/hooks/useAuth.ts` - React hook for auth state management
+  - `client/src/lib/authUtils.ts` - Auth utilities and API helpers
+  - `client/src/pages/landing.tsx` - Landing page for logged-out users
+  - `client/src/pages/admin.tsx` - Admin dashboard for user management
+  - `client/src/App.tsx` - Auth state handling and protected routes
+  - Automatic redirect to landing page when not authenticated
+  - Sidebar includes logout button and admin link (for admins)
+
+- **Admin Features** (`/admin` page):
+  - View all users with their roles and access levels
+  - Toggle AI access for individual users
+  - Promote/demote admin privileges
+  - Real-time user list updates
+  - Protected route (requires `isAdmin: true`)
+
+- **API Endpoints**:
+  - `GET /api/auth/user` - Get current user profile
+  - `PATCH /api/auth/user` - Update user preferences (push notifications)
+  - `GET /api/login` - Initiate Replit Auth login flow
+  - `GET /api/logout` - Logout and clear session
+  - `GET /api/admin/users` - List all users (admin only)
+  - `PATCH /api/admin/users/:id` - Update user roles (admin only)
+
+- **Access Control Flow**:
+  1. New users get full access by default (`hasAIAccess: true`)
+  2. Users can toggle push notifications in Settings page
+  3. Admins can revoke AI access for specific users
+  4. Protected endpoints return 403 if user lacks required role
+  5. All user-specific data isolated by authenticated user ID
+
+- **Session Management**:
+  - PostgreSQL-backed sessions with `connect-pg-simple`
+  - Session secret from `SESSION_SECRET` environment variable
+  - 7-day session expiration with automatic refresh
+  - Secure cookie settings in production
+
+The authorization system ensures all AI features are properly gated, user data is isolated, and admins can manage access control through a dedicated dashboard.
+
 ## External Dependencies
 - **Database**: PostgreSQL (Neon) with Drizzle ORM
+- **Authentication**: Replit Auth with OpenID Connect (OIDC)
 - **AI Integration**: OpenAI via Replit AI Integrations (no API key required)
 - **Drag and Drop**: `@hello-pangea/dnd` for day planner reordering
 - **ML Service**: FastAPI microservice (optionally deployed to Fly.io)
