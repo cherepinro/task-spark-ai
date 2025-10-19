@@ -44,6 +44,24 @@ class Logger {
   serviceError(service: string, operation: string, error: Error | unknown, context?: LogContext): void {
     this.error(`Service Error: ${service}.${operation}`, error, context);
   }
+
+  // Cache-specific loggers
+  cacheHit(key: string): void {
+    this.debug('Cache hit', { key });
+  }
+
+  // ML-specific loggers
+  mlFeatures(features: number[]): void {
+    this.debug('ML features calculated', { features });
+  }
+
+  mlPrediction(score: number, level: string, confidence: number): void {
+    this.info('ML prediction', { score, level, confidence });
+  }
+
+  mlServiceError(error: Error | unknown): void {
+    this.error('ML service error', error);
+  }
 }
 
 export const logger = new Logger();

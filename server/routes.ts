@@ -646,6 +646,171 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Procrastination Score ML endpoint
+  app.get("/api/ml/procrastination-score", async (_req: Request, res: Response) => {
+    try {
+      // Check cache first (1 hour TTL)
+      const cacheKey = 'ml:procrastination-score';
+      const cached = cacheService.get<{ score: number; level: string; confidence: number; calculatedAt: string }>(cacheKey);
+      
+      if (cached) {
+        logger.cacheHit(cacheKey);
+        return res.json({ ...cached, fromCache: true });
+      }
+
+      // Fetch all tasks for feature calculation
+      const allTasks = await storage.getAllTasks();
+      const stats = await storage.getUserStats();
+      
+      // Calculate 10 features for ML model
+      const now = new Date();
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      
+      // Feature 1: tasks_overdue_ratio (0-1)
+      const overdueTasks = allTasks.filter(t => 
+        t.dueDate && new Date(t.dueDate) < now && t.status !== 'completed' && t.status !== 'archived'
+      );
+      const activeTasks = allTasks.filter(t => t.status !== 'completed' && t.status !== 'archived');
+      const tasksOverdueRatio = activeTasks.length > 0 ? overdueTasks.length / activeTasks.length : 0;
+      
+      // Feature 2: avg_task_completion_time (0-10 days)
+      const completedTasks = allTasks.filter(t => t.status === 'completed');
+      let avgCompletionTime = 5; // default
+      if (completedTasks.length > 0) {
+        const completionTimes = completedTasks.map(t => {
+          const created = new Date(t.createdAt);
+          const completed = t.completedAt ? new Date(t.completedAt) : now;
+          return (completed.getTime() - created.getTime()) / (24 * 60 * 60 * 1000);
+        });
+        avgCompletionTime = Math.min(10, completionTimes.reduce((a, b) => a + b, 0) / completionTimes.length);
+      }
+      
+      // Feature 3: tasks_with_high_priority_incomplete (0-1)
+      const highPriorityIncomplete = activeTasks.filter(t => t.priority === 'high');
+      const highPriorityRatio = activeTasks.length > 0 ? highPriorityIncomplete.length / activeTasks.length : 0;
+      
+      // Feature 4: days_since_last_completion (0-30)
+      let daysSinceLastCompletion = 30; // default (max)
+      if (completedTasks.length > 0) {
+        const sortedCompleted = completedTasks.sort((a, b) => {
+          const aDate = a.completedAt ? new Date(a.completedAt) : new Date(a.createdAt);
+          const bDate = b.completedAt ? new Date(b.completedAt) : new Date(b.createdAt);
+          return bDate.getTime() - aDate.getTime();
+        });
+        const lastCompleted = sortedCompleted[0].completedAt 
+          ? new Date(sortedCompleted[0].completedAt)
+          : new Date(sortedCompleted[0].createdAt);
+        daysSinceLastCompletion = Math.min(30, (now.getTime() - lastCompleted.getTime()) / (24 * 60 * 60 * 1000));
+      }
+      
+      // Feature 5: task_creation_to_due_ratio (0-1)
+      const tasksWithDueDates = allTasks.filter(t => t.dueDate);
+      let creationToDueRatio = 0.5; // default
+      if (tasksWithDueDates.length > 0) {
+        const ratios = tasksWithDueDates.map(t => {
+          const created = new Date(t.createdAt);
+          const due = new Date(t.dueDate!);
+          const totalTime = due.getTime() - created.getTime();
+          const timeToDue = totalTime / (7 * 24 * 60 * 60 * 1000); // weeks until due
+          return Math.min(1, Math.max(0, 1 - (timeToDue / 4))); // High ratio = created close to due
+        });
+        creationToDueRatio = ratios.reduce((a, b) => a + b, 0) / ratios.length;
+      }
+      
+      // Feature 6: avg_task_age (0-30 days)
+      let avgTaskAge = 15; // default
+      if (activeTasks.length > 0) {
+        const ages = activeTasks.map(t => {
+          const created = new Date(t.createdAt);
+          return Math.min(30, (now.getTime() - created.getTime()) / (24 * 60 * 60 * 1000));
+        });
+        avgTaskAge = ages.reduce((a, b) => a + b, 0) / ages.length;
+      }
+      
+      // Feature 7: completion_rate_last_week (0-1)
+      const recentTasks = allTasks.filter(t => new Date(t.createdAt) >= oneWeekAgo);
+      const recentCompleted = recentTasks.filter(t => t.status === 'completed');
+      const completionRateLastWeek = recentTasks.length > 0 ? recentCompleted.length / recentTasks.length : 0.5;
+      
+      // Feature 8: tasks_in_progress_ratio (0-1)
+      const inProgressTasks = allTasks.filter(t => t.status === 'in-progress');
+      const inProgressRatio = allTasks.length > 0 ? inProgressTasks.length / allTasks.length : 0;
+      
+      // Feature 9: project_switching_frequency (0-1)
+      // Simplified: ratio of tasks across multiple projects vs single project
+      const projectIds = new Set(allTasks.filter(t => t.projectId).map(t => t.projectId));
+      const projectSwitchingFrequency = projectIds.size > 1 ? Math.min(1, (projectIds.size - 1) / 5) : 0;
+      
+      // Feature 10: ai_suggestions_ignored_ratio (0-1)
+      // Use stats data if available, otherwise default to 0.3
+      const aiSuggestionsIgnoredRatio = 0.3; // Placeholder - would need tracking in actual app
+      
+      // Construct feature vector
+      const features = [
+        tasksOverdueRatio,
+        avgCompletionTime,
+        highPriorityRatio,
+        daysSinceLastCompletion,
+        creationToDueRatio,
+        avgTaskAge,
+        completionRateLastWeek,
+        inProgressRatio,
+        projectSwitchingFrequency,
+        aiSuggestionsIgnoredRatio
+      ];
+      
+      logger.mlFeatures(features);
+      
+      // Call ML service
+      const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+      
+      try {
+        const mlResponse = await fetch(`${ML_SERVICE_URL}/features`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ features }),
+        });
+        
+        if (!mlResponse.ok) {
+          throw new Error(`ML service returned ${mlResponse.status}`);
+        }
+        
+        const mlResult = await mlResponse.json();
+        
+        const result = {
+          score: mlResult.score,
+          level: mlResult.level,
+          confidence: mlResult.confidence,
+          calculatedAt: now.toISOString(),
+        };
+        
+        // Cache for 1 hour
+        cacheService.set(cacheKey, result, 60 * 60);
+        logger.mlPrediction(result.score, result.level, result.confidence);
+        
+        res.json({ ...result, fromCache: false });
+      } catch (mlError) {
+        logger.mlServiceError(mlError);
+        // Return fallback score based on simple heuristics
+        const fallbackScore = Math.round(tasksOverdueRatio * 50 + (1 - completionRateLastWeek) * 50);
+        const fallbackLevel = fallbackScore <= 30 ? 'low' : fallbackScore <= 60 ? 'moderate' : 'high';
+        
+        res.json({
+          score: fallbackScore,
+          level: fallbackLevel,
+          confidence: 0.5,
+          calculatedAt: now.toISOString(),
+          fromCache: false,
+          fallback: true,
+          error: 'ML service unavailable'
+        });
+      }
+    } catch (error) {
+      logger.apiError('GET /api/ml/procrastination-score', error);
+      res.status(500).json({ error: "Failed to calculate procrastination score" });
+    }
+  });
+
   // Task Template routes
   app.get("/api/templates", async (_req: Request, res: Response) => {
     try {
