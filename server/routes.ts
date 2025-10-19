@@ -20,6 +20,7 @@ import {
   type ChatMessage,
 } from "./services/ai.service";
 import { checkQuota, incrementQuota } from "./services/quota.service";
+import { checkUsage, incrementUsage, getAllUsage, type FeatureType } from "./services/usage-tracker.service";
 import { cacheService } from "./services/cache.service";
 import { dataCacheService } from "./services/data-cache.service";
 import md5 from "md5";
@@ -86,6 +87,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/tasks/bulk-import", async (req: Request, res: Response) => {
     try {
+      // Check usage limit
+      const usageCheck = await checkUsage('bulk_import');
+      if (!usageCheck.allowed) {
+        return res.status(429).json({ 
+          error: `Bulk import limit reached. You can import ${usageCheck.limit} checklists per month. Resets next month.`,
+          remaining: usageCheck.remaining,
+          limit: usageCheck.limit,
+        });
+      }
+
       const { checklist, priority = "medium", projectId } = req.body;
       
       if (!checklist || typeof checklist !== "string") {
@@ -97,6 +108,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (parsedTasks.length === 0) {
         return res.status(400).json({ error: "No valid tasks found in checklist" });
+      }
+
+      // Check if importing would exceed task limit
+      const taskUsage = await checkUsage('tasks');
+      if (taskUsage.used + parsedTasks.length > taskUsage.limit) {
+        return res.status(429).json({
+          error: `Task limit would be exceeded. You have ${taskUsage.remaining} tasks remaining out of ${taskUsage.limit} total.`,
+          remaining: taskUsage.remaining,
+          limit: taskUsage.limit,
+        });
       }
 
       // Create all tasks
@@ -112,12 +133,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
 
+      // Increment usage counter
+      await incrementUsage('bulk_import');
+
       // Invalidate tasks cache
       dataCacheService.invalidateTasks();
 
       res.status(201).json({
         count: createdTasks.length,
         tasks: createdTasks,
+        usage: {
+          remaining: usageCheck.remaining - 1,
+          limit: usageCheck.limit,
+        },
       });
     } catch (error) {
       console.error("[POST /api/tasks/bulk-import] Error:", error);
@@ -533,6 +561,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(task);
     } catch (error) {
       res.status(500).json({ error: "Failed to create task from template" });
+    }
+  });
+
+  // Usage tracking endpoint
+  app.get("/api/usage", async (_req: Request, res: Response) => {
+    try {
+      const usage = await getAllUsage();
+      res.json(usage);
+    } catch (error) {
+      console.error("[GET /api/usage] Error:", error);
+      res.status(500).json({ error: "Failed to fetch usage data" });
     }
   });
 
