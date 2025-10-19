@@ -7,7 +7,8 @@ import { EmptyState } from "@/components/empty-state";
 import { DashboardSkeleton } from "@/components/loading-state";
 import { TaskCreationModal } from "@/components/task-creation-modal";
 import { SaveTemplateDialog } from "@/components/save-template-dialog";
-import { CheckCircle2, Clock, TrendingUp, Sparkles, ListTodo, Plus } from "lucide-react";
+import { BulkImportDialog } from "@/components/bulk-import-dialog";
+import { CheckCircle2, Clock, TrendingUp, Sparkles, ListTodo, Plus, ListChecks } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -17,6 +18,7 @@ import { useSaveTemplate } from "@/hooks/use-save-template";
 
 export default function Dashboard() {
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const { toast } = useToast();
   const {
     taskToSave,
@@ -188,10 +190,22 @@ export default function Dashboard() {
               <ListTodo className="h-5 w-5" />
               Today's Focus
             </h2>
-            <Button onClick={() => setShowTaskModal(true)} size="sm" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Task
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setShowImportDialog(true)}
+                size="sm"
+                variant="outline"
+                className="gap-2"
+                data-testid="button-import-checklist"
+              >
+                <ListChecks className="h-4 w-4" />
+                Import Checklist
+              </Button>
+              <Button onClick={() => setShowTaskModal(true)} size="sm" className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add Task
+              </Button>
+            </div>
           </div>
           {upcomingTasks.length > 0 ? (
             <div className="space-y-3">
@@ -256,6 +270,11 @@ export default function Dashboard() {
         onOpenChange={setDialogOpen}
         task={taskToSave}
         onSave={handleSaveTemplate}
+      />
+
+      <BulkImportDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
       />
     </>
   );

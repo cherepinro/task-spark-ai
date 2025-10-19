@@ -63,10 +63,7 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
 
   const importMutation = useMutation({
     mutationFn: async (data: z.infer<typeof bulkImportSchema>) => {
-      const response = await apiRequest("/api/tasks/bulk-import", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      const response = await apiRequest("POST", "/api/tasks/bulk-import", data);
       return response.json();
     },
     onSuccess: (data) => {
