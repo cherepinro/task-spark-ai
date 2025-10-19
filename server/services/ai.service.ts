@@ -267,3 +267,78 @@ export function parseMarkdownChecklist(markdown: string): DecomposedTask[] {
 
   return tasks;
 }
+
+export interface TimeBlock {
+  id: string;
+  time: string; // Format: "08:00"
+  duration: number; // in minutes
+  taskId?: string;
+  title: string;
+  type: "task" | "habit" | "busy" | "free";
+  description?: string;
+}
+
+interface DayPlanInput {
+  tasks: Array<{ id: string; title: string; description?: string; priority?: string; hours?: string }>;
+  habits?: Array<{ title: string; duration: number }>;
+  busySlots?: Array<{ time: string; duration: number; title: string }>;
+}
+
+export async function generateDayPlan(input: DayPlanInput): Promise<TimeBlock[]> {
+  const systemPrompt = `You are an AI day planner assistant. Given tasks, habits, and busy time slots, create an optimized daily schedule from 08:00 to 22:00.
+
+Rules:
+1. Schedule high-priority tasks during peak productivity hours (09:00-12:00, 14:00-17:00)
+2. Include breaks between long tasks
+3. Respect busy slots (don't schedule anything during them)
+4. Each time block should be 30-60 minutes
+5. Include buffer time for transitions
+6. Return time blocks in chronological order
+
+Return ONLY a valid JSON array of time blocks with this structure:
+[
+  {
+    "id": "unique-id",
+    "time": "HH:MM",
+    "duration": 60,
+    "taskId": "task-id-or-null",
+    "title": "Task or activity name",
+    "type": "task|habit|busy|free",
+    "description": "Optional details"
+  }
+]`;
+
+  const userPrompt = `Create a day plan with these inputs:
+
+Tasks:
+${input.tasks.map(t => `- ${t.title} (Priority: ${t.priority || 'medium'}, Hours: ${t.hours || '1'})`).join('\n')}
+
+${input.habits && input.habits.length > 0 ? `Habits:
+${input.habits.map(h => `- ${h.title} (${h.duration} min)`).join('\n')}` : ''}
+
+${input.busySlots && input.busySlots.length > 0 ? `Busy Time Slots:
+${input.busySlots.map(b => `- ${b.time} for ${b.duration} min: ${b.title}`).join('\n')}` : ''}
+
+Generate an optimized daily schedule from 08:00 to 22:00.`;
+
+  // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+  const response = await openai.chat.completions.create({
+    model: "gpt-5",
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    temperature: 0.7,
+    max_completion_tokens: 2000,
+  });
+
+  const content = response.choices[0]?.message?.content || "[]";
+  
+  try {
+    const blocks = JSON.parse(content) as TimeBlock[];
+    return blocks;
+  } catch (error) {
+    console.error("[generateDayPlan] Failed to parse AI response:", content);
+    throw new Error("Failed to generate day plan");
+  }
+}

@@ -17,7 +17,9 @@ import {
   chatWithAI,
   decomposeTask,
   parseMarkdownChecklist,
+  generateDayPlan,
   type ChatMessage,
+  type TimeBlock,
 } from "./services/ai.service";
 import { checkQuota, incrementQuota } from "./services/quota.service";
 import { checkUsage, incrementUsage, getAllUsage, type FeatureType } from "./services/usage-tracker.service";
@@ -462,6 +464,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Task decomposition error:", error);
       res.status(500).json({ error: "Failed to decompose task" });
+    }
+  });
+
+  // AI Day Plan endpoint
+  app.post("/api/ai/day-plan", async (req: Request, res: Response) => {
+    try {
+      // Check usage limit
+      const usageCheck = await checkUsage('day_plan');
+      if (!usageCheck.allowed) {
+        return res.status(429).json({ 
+          error: `Day planner limit reached. You can generate ${usageCheck.limit} plan per day. Resets tomorrow.`,
+          remaining: usageCheck.remaining,
+          limit: usageCheck.limit,
+        });
+      }
+
+      const { tasks, habits, busySlots } = req.body;
+      
+      if (!tasks || !Array.isArray(tasks)) {
+        return res.status(400).json({ error: "Tasks array is required" });
+      }
+
+      // Fetch full task details from database
+      const taskDetails = await Promise.all(
+        tasks.map(async (taskId: string) => {
+          const task = await storage.getTaskById(taskId);
+          return task;
+        })
+      );
+
+      const validTasks = taskDetails.filter(t => t !== null);
+
+      // Generate day plan with AI
+      const timeBlocks = await generateDayPlan({
+        tasks: validTasks.map(t => ({
+          id: t!.id,
+          title: t!.title,
+          description: t!.description || undefined,
+          priority: t!.priority,
+          hours: t!.hours || undefined,
+        })),
+        habits: habits || [],
+        busySlots: busySlots || [],
+      });
+
+      // Increment usage counter
+      await incrementUsage('day_plan');
+
+      res.json({
+        timeBlocks,
+        usage: {
+          remaining: usageCheck.remaining - 1,
+          limit: usageCheck.limit,
+        },
+      });
+    } catch (error) {
+      console.error("[POST /api/ai/day-plan] Error:", error);
+      res.status(500).json({ error: "Failed to generate day plan" });
     }
   });
 
