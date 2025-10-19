@@ -11,12 +11,15 @@ import {
   type InsertUserSettings,
   type UserStats,
   type InsertUserStats,
+  type PushToken,
+  type InsertPushToken,
   tasks,
   projects,
   aiInsights,
   taskTemplates,
   userSettings,
   userStats,
+  pushTokens,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, ilike } from "drizzle-orm";
@@ -60,6 +63,11 @@ export interface IStorage {
   // User Stats operations
   getUserStats(userId?: string): Promise<UserStats | undefined>;
   incrementSprintCount(userId?: string): Promise<UserStats>;
+
+  // Push Token operations
+  savePushToken(token: InsertPushToken): Promise<PushToken>;
+  getAllPushTokens(userId?: string): Promise<PushToken[]>;
+  deletePushToken(token: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -242,6 +250,46 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return created;
     }
+  }
+
+  // Push Token operations
+  async savePushToken(tokenData: InsertPushToken): Promise<PushToken> {
+    // Check if token already exists for this user/device
+    const [existing] = await db
+      .select()
+      .from(pushTokens)
+      .where(
+        and(
+          eq(pushTokens.userId, tokenData.userId || "default"),
+          eq(pushTokens.token, tokenData.token)
+        )
+      );
+
+    if (existing) {
+      // Update existing token
+      const [updated] = await db
+        .update(pushTokens)
+        .set({ ...tokenData, updatedAt: new Date() })
+        .where(eq(pushTokens.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      // Insert new token
+      const [created] = await db
+        .insert(pushTokens)
+        .values({ ...tokenData, userId: tokenData.userId || "default" })
+        .returning();
+      return created;
+    }
+  }
+
+  async getAllPushTokens(userId = "default"): Promise<PushToken[]> {
+    return db.select().from(pushTokens).where(eq(pushTokens.userId, userId));
+  }
+
+  async deletePushToken(token: string): Promise<boolean> {
+    const result = await db.delete(pushTokens).where(eq(pushTokens.token, token));
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 }
 
