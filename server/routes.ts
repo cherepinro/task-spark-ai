@@ -28,6 +28,7 @@ import {
 import { checkUsage, incrementUsage, getAllUsage, type FeatureType } from "./services/usage-tracker.service";
 import { cacheService } from "./services/cache.service";
 import { dataCacheService } from "./services/data-cache.service";
+import { logger } from "./services/logger.service";
 import md5 from "md5";
 import { calculateNextOccurrence, shouldCreateNextOccurrence } from "./utils/recurrence";
 
@@ -221,6 +222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
+      logger.apiError('PATCH /api/tasks/:id', error as Error, { taskId: req.params.id, body: req.body });
       res.status(500).json({ error: "Failed to update task" });
     }
   });
