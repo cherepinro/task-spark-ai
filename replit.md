@@ -22,6 +22,7 @@ The API provides endpoints for:
 - Task management (`/api/tasks`, `/api/tasks/bulk-import`)
 - Project management (`/api/projects`)
 - AI features (`/api/ai/suggest`, `/api/ai/parse`, `/api/ai/chat`, `/api/ai/decompose`, `/api/ai/day-plan`)
+- ML features (`/api/ml/procrastination-score`)
 - Templates (`/api/templates`)
 - Usage and statistics (`/api/usage`, `/api/settings`, `/api/stats`)
 - Cache management (`/api/cache/stats`, `/api/cache/clear`)
@@ -29,7 +30,31 @@ The API provides endpoints for:
 
 Performance is optimized through database indexing and an in-memory caching layer with intelligent invalidation.
 
+## ML Microservice (PROMPT-07)
+TaskSpark AI includes a **FastAPI-based ML microservice** (`/ml` directory) for procrastination score prediction:
+
+- **Model**: Logistic regression (`procrastination-model.pkl`) trained on 10 behavioral features
+- **Features** (float[10]):
+  1. tasks_overdue_ratio (0-1)
+  2. avg_task_completion_time (0-10 days)
+  3. tasks_with_high_priority_incomplete (0-1)
+  4. days_since_last_completion (0-30)
+  5. task_creation_to_due_ratio (0-1)
+  6. avg_task_age (0-30 days)
+  7. completion_rate_last_week (0-1)
+  8. tasks_in_progress_ratio (0-1)
+  9. project_switching_frequency (0-1)
+  10. ai_suggestions_ignored_ratio (0-1)
+- **Endpoint**: `POST /features` returns `{score: 0-100, level: "low"|"moderate"|"high", confidence: 0-1}`
+- **Deployment**: Fly.io-ready with Dockerfile and `fly.toml` configuration
+- **Express Integration**: `/api/ml/procrastination-score` calls ML service with 1-hour cache
+- **React UI**: Colored chip on Dashboard + bottom-sheet with personalized tips
+- **Testing**: Golden unit tests with 5 known feature vectors
+
+The Express backend calculates features from task data, calls the ML service (with fallback heuristics if unavailable), and caches results for 1 hour. The Dashboard displays the score as a color-coded badge (green/yellow/red) that opens a bottom-sheet with actionable recommendations.
+
 ## External Dependencies
 - **Database**: PostgreSQL (Neon) with Drizzle ORM
 - **AI Integration**: OpenAI via Replit AI Integrations (no API key required)
 - **Drag and Drop**: `@hello-pangea/dnd` for day planner reordering
+- **ML Service**: FastAPI microservice (optionally deployed to Fly.io)
