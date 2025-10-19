@@ -72,12 +72,22 @@ TaskSpark AI is an intelligent task management application powered by AI, availa
 - `POST /api/ai/suggest` - Get AI suggestions for task
 - `POST /api/ai/parse` - Parse natural language into task
 - `POST /api/ai/chat` - AI chat conversation
+- `POST /api/ai/decompose` - AI task decomposition (NEW: splits task into 3-7 subtasks with hours)
 - `GET /api/templates` - Get all task templates
 - `POST /api/templates` - Create new task template
 - `DELETE /api/templates/:id` - Delete task template
 - `POST /api/templates/:id/create-task` - Create task from template
+- `GET /docs` - Swagger API documentation (NEW)
 
 ## Recent Changes
+- 2025-10-19: **AI Task Decomposition Feature** - Auto-split complex tasks into subtasks with AI
+  - POST /api/ai/decompose endpoint with GPT-5 integration
+  - Markdown checklist parsing (- [ ] Task (Xh) format)
+  - In-memory caching with md5(title) keys, 90-day TTL
+  - Quota system: 5 free calls/month, auto-resets monthly
+  - Database schema: added hours field to tasks, new quotaUsage table
+  - Swagger API docs at /docs endpoint
+  - Full test coverage with vitest + supertest + Playwright
 - 2025-10-19: **Android Mobile App Support** - Full Capacitor integration for native Android app
   - Added Capacitor 7.4+ with Android platform
   - Mobile-optimized viewport and meta tags
