@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated, requiresAIAccess } from "./replitAuth";
 import {
   insertTaskSchema,
   updateTaskSchema,
@@ -455,7 +455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Suggestion endpoint
-  app.post("/api/ai/suggest", async (req: Request, res: Response) => {
+  app.post("/api/ai/suggest", isAuthenticated, requiresAIAccess, async (req: any, res: Response) => {
     try {
       const taskData = insertTaskSchema.parse(req.body);
       const suggestion = await analyzeTask(taskData);
@@ -464,12 +464,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
+      logger.apiError('POST /api/ai/suggest', error);
       res.status(500).json({ error: "Failed to generate AI suggestion" });
     }
   });
 
   // AI Parse natural language endpoint
-  app.post("/api/ai/parse", async (req: Request, res: Response) => {
+  app.post("/api/ai/parse", isAuthenticated, requiresAIAccess, async (req: any, res: Response) => {
     try {
       const { input } = req.body;
       if (!input || typeof input !== "string") {
@@ -478,12 +479,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const parsedTask = await parseNaturalLanguageTask(input);
       res.json(parsedTask);
     } catch (error) {
+      logger.apiError('POST /api/ai/parse', error);
       res.status(500).json({ error: "Failed to parse input" });
     }
   });
 
   // Generate productivity insight
-  app.post("/api/ai/generate-insight", async (req: Request, res: Response) => {
+  app.post("/api/ai/generate-insight", isAuthenticated, requiresAIAccess, async (req: any, res: Response) => {
     try {
       const tasks = await storage.getAllTasks();
       const insight = await generateProductivityInsight(tasks);
@@ -501,12 +503,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(insight);
     } catch (error) {
+      logger.apiError('POST /api/ai/generate-insight', error);
       res.status(500).json({ error: "Failed to generate insight" });
     }
   });
 
   // AI Chat endpoint
-  app.post("/api/ai/chat", async (req: Request, res: Response) => {
+  app.post("/api/ai/chat", isAuthenticated, requiresAIAccess, async (req: any, res: Response) => {
     try {
       const { message, conversationHistory } = req.body;
       
@@ -514,19 +517,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Message is required" });
       }
 
+      const userId = req.user.claims.sub;
+      const usageCheck = await checkUsage('ai_chat', userId);
+      
+      if (!usageCheck.allowed) {
+        return res.status(429).json({ 
+          error: `AI chat limit reached. You have used ${usageCheck.limit} messages this month.`,
+          remaining: usageCheck.remaining,
+          limit: usageCheck.limit,
+        });
+      }
+
       const history: ChatMessage[] = conversationHistory || [];
       const tasks = await storage.getAllTasks();
       
       const response = await chatWithAI(message, history, tasks);
       
+      // Increment usage
+      await incrementUsage('ai_chat', userId);
+      
       res.json(response);
     } catch (error) {
+      logger.apiError('POST /api/ai/chat', error);
       res.status(500).json({ error: "Failed to process chat message" });
     }
   });
 
   // AI Task Decomposition endpoint
-  app.post("/api/ai/decompose", async (req: Request, res: Response) => {
+  app.post("/api/ai/decompose", isAuthenticated, requiresAIAccess, async (req: any, res: Response) => {
     try {
       const { title } = req.body;
       
@@ -534,8 +552,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Task title is required" });
       }
 
-      // Check usage limit
-      const userId = "default"; // TODO: Replace with actual user ID when auth is implemented
+      // Get authenticated user ID
+      const userId = req.user.claims.sub;
       const usageCheck = await checkUsage('ai_decompose', userId);
       
       if (!usageCheck.allowed) {
@@ -601,10 +619,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Day Plan endpoint
-  app.post("/api/ai/day-plan", async (req: Request, res: Response) => {
+  app.post("/api/ai/day-plan", isAuthenticated, requiresAIAccess, async (req: any, res: Response) => {
     try {
+      const userId = req.user.claims.sub;
+      
       // Check usage limit
-      const usageCheck = await checkUsage('day_plan');
+      const usageCheck = await checkUsage('day_plan', userId);
       if (!usageCheck.allowed) {
         return res.status(429).json({ 
           error: `Day planner limit reached. You can generate ${usageCheck.limit} plan per day. Resets tomorrow.`,
@@ -641,7 +661,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Increment usage counter
-      await incrementUsage('day_plan');
+      await incrementUsage('day_plan', userId);
 
       res.json({
         timeBlocks,
@@ -651,16 +671,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
     } catch (error) {
-      console.error("[POST /api/ai/day-plan] Error:", error);
+      logger.apiError('POST /api/ai/day-plan', error);
       res.status(500).json({ error: "Failed to generate day plan" });
     }
   });
 
   // AI Reorganize (Eisenhower Matrix) endpoint
-  app.post("/api/ai/reorganize", async (req: Request, res: Response) => {
+  app.post("/api/ai/reorganize", isAuthenticated, requiresAIAccess, async (req: any, res: Response) => {
     try {
+      const userId = req.user.claims.sub;
+      
       // Check usage limit (once per day)
-      const usageCheck = await checkUsage('ai_reorganize');
+      const usageCheck = await checkUsage('ai_reorganize', userId);
       if (!usageCheck.allowed) {
         return res.status(429).json({ 
           error: `Reorganize limit reached. You can reorganize ${usageCheck.limit} time per day. Resets tomorrow.`,
@@ -713,7 +735,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Increment usage counter
-      await incrementUsage('ai_reorganize');
+      await incrementUsage('ai_reorganize', userId);
 
       res.json({
         suggestions,
@@ -1090,58 +1112,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User settings routes
-  app.get("/api/settings", async (_req: Request, res: Response) => {
+  app.get("/api/settings", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const settings = await storage.getUserSettings();
+      const userId = req.user.claims.sub;
+      const settings = await storage.getUserSettings(userId);
       
       if (!settings) {
         const defaultSettings = await storage.updateUserSettings({
           focusSprintEnabled: false,
           focusSprintSound: "soft-chime",
-        });
+        }, userId);
         return res.json(defaultSettings);
       }
       
       res.json(settings);
     } catch (error) {
+      logger.apiError('GET /api/settings', error);
       res.status(500).json({ error: "Failed to fetch settings" });
     }
   });
 
-  app.patch("/api/settings", async (req: Request, res: Response) => {
+  app.patch("/api/settings", isAuthenticated, async (req: any, res: Response) => {
     try {
+      const userId = req.user.claims.sub;
       const validatedSettings = insertUserSettingsSchema.partial().parse(req.body);
-      const settings = await storage.updateUserSettings(validatedSettings);
+      const settings = await storage.updateUserSettings(validatedSettings, userId);
       res.json(settings);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid settings data", details: error.errors });
       }
+      logger.apiError('PATCH /api/settings', error);
       res.status(500).json({ error: "Failed to update settings" });
     }
   });
 
   // User stats routes
-  app.get("/api/stats", async (_req: Request, res: Response) => {
+  app.get("/api/stats", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const stats = await storage.getUserStats();
+      const userId = req.user.claims.sub;
+      const stats = await storage.getUserStats(userId);
       
       if (!stats) {
-        const defaultStats = await storage.incrementSprintCount();
+        const defaultStats = await storage.incrementSprintCount(userId);
         return res.json({ ...defaultStats, sprintsCompleted: 0 });
       }
       
       res.json(stats);
     } catch (error) {
+      logger.apiError('GET /api/stats', error);
       res.status(500).json({ error: "Failed to fetch stats" });
     }
   });
 
-  app.post("/api/stats/sprint-complete", async (_req: Request, res: Response) => {
+  app.post("/api/stats/sprint-complete", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const stats = await storage.incrementSprintCount();
+      const userId = req.user.claims.sub;
+      const stats = await storage.incrementSprintCount(userId);
       res.json(stats);
     } catch (error) {
+      logger.apiError('POST /api/stats/sprint-complete', error);
       res.status(500).json({ error: "Failed to increment sprint count" });
     }
   });

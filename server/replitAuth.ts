@@ -157,6 +157,28 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   }
 };
 
+// Middleware to check if user has AI access
+export const requiresAIAccess: RequestHandler = async (req: any, res, next) => {
+  try {
+    const userId = req.user?.claims?.sub;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const user = await storage.getUser(userId);
+    if (!user || !user.hasAIAccess) {
+      return res.status(403).json({ 
+        message: "AI features are not enabled for your account. Please contact an administrator."
+      });
+    }
+
+    next();
+  } catch (error) {
+    logger.error('Error checking AI access', { error });
+    res.status(500).json({ message: "Failed to verify AI access" });
+  }
+};
+
 // Generate a random admin password on first run
 export function generateAdminCredentials() {
   const adminPassword = crypto.randomBytes(16).toString('hex');
