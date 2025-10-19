@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, boolean, integer, numeric } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -24,6 +24,9 @@ export const tasks = pgTable("tasks", {
   recurrenceEndDate: timestamp("recurrence_end_date", { mode: "date" }),
   recurrenceEndCount: varchar("recurrence_end_count", { length: 10 }),
   parentTaskId: varchar("parent_task_id", { length: 255 }),
+  
+  // Task decomposition fields
+  hours: numeric("hours", { precision: 5, scale: 2 }),
 });
 
 export const projects = pgTable("projects", {
@@ -53,6 +56,15 @@ export const taskTemplates = pgTable("task_templates", {
   recurrencePattern: varchar("recurrence_pattern", { length: 20 }),
   recurrenceInterval: varchar("recurrence_interval", { length: 10 }),
   createdAt: timestamp("created_at", { mode: "date" }).notNull().default(sql`now()`),
+});
+
+export const quotaUsage = pgTable("quota_usage", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().default("default"),
+  month: varchar("month", { length: 7 }).notNull(),
+  callCount: integer("call_count").notNull().default(0),
+  createdAt: timestamp("created_at", { mode: "date" }).notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at", { mode: "date" }).notNull().default(sql`now()`),
 });
 
 // Relations
@@ -134,3 +146,4 @@ export type AIInsight = typeof aiInsights.$inferSelect;
 export type InsertAIInsight = z.infer<typeof insertAIInsightSchema>;
 export type TaskTemplate = typeof taskTemplates.$inferSelect;
 export type InsertTaskTemplate = z.infer<typeof insertTaskTemplateSchema>;
+export type QuotaUsage = typeof quotaUsage.$inferSelect;
