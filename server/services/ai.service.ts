@@ -342,3 +342,68 @@ Generate an optimized daily schedule from 08:00 to 22:00.`;
     throw new Error("Failed to generate day plan");
   }
 }
+
+export interface ReorganizeSuggestion {
+  id: string;
+  action: "defer" | "delete" | "delegate";
+  reason: string;
+}
+
+interface ReorganizeInput {
+  tasks: Array<{ id: string; title: string; description?: string; priority?: string; status?: string; dueDate?: string }>;
+  completedRatio7d: number; // 0-1, percentage of tasks completed in last 7 days
+}
+
+export async function reorganizeTasks(input: ReorganizeInput): Promise<ReorganizeSuggestion[]> {
+  const systemPrompt = `You are an AI task organizer using the Eisenhower Matrix (urgent-important framework).
+  
+Analyze tasks and recommend actions:
+- **defer**: Not urgent but important - schedule for later
+- **delete**: Neither urgent nor important - can be removed
+- **delegate**: Urgent but less important - could be delegated or deprioritized
+
+Consider:
+1. Task priority and status
+2. Due dates (overdue tasks are more urgent)
+3. User's completion ratio (if low, recommend deleting less important tasks)
+4. Task descriptions for context
+
+Return ONLY a valid JSON array:
+[
+  {
+    "id": "task-id",
+    "action": "defer|delete|delegate",
+    "reason": "Brief explanation (max 50 chars)"
+  }
+]`;
+
+  const userPrompt = `User's 7-day completion ratio: ${(input.completedRatio7d * 100).toFixed(0)}%
+
+Tasks to reorganize:
+${input.tasks.map((t, i) => `${i + 1}. [${t.id}] "${t.title}" (Priority: ${t.priority || 'medium'}, Status: ${t.status || 'todo'}${t.dueDate ? `, Due: ${t.dueDate}` : ''})`).join('\n')}
+
+Apply Eisenhower Matrix and return reorganization suggestions.`;
+
+  // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+  const response = await openai.chat.completions.create({
+    model: "gpt-5",
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    response_format: { type: "json_object" },
+    max_completion_tokens: 1500,
+  });
+
+  const content = response.choices[0]?.message?.content || "{}";
+  
+  try {
+    const parsed = JSON.parse(content);
+    // Handle both array and object responses
+    const suggestions = Array.isArray(parsed) ? parsed : (parsed.suggestions || []);
+    return suggestions as ReorganizeSuggestion[];
+  } catch (error) {
+    console.error("[reorganizeTasks] Failed to parse AI response:", content);
+    throw new Error("Failed to reorganize tasks");
+  }
+}

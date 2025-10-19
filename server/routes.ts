@@ -19,8 +19,10 @@ import {
   decomposeTask,
   parseMarkdownChecklist,
   generateDayPlan,
+  reorganizeTasks,
   type ChatMessage,
   type TimeBlock,
+  type ReorganizeSuggestion,
 } from "./services/ai.service";
 import { checkQuota, incrementQuota } from "./services/quota.service";
 import { checkUsage, incrementUsage, getAllUsage, type FeatureType } from "./services/usage-tracker.service";
@@ -236,6 +238,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete task" });
+    }
+  });
+
+  app.patch("/api/tasks/bulk", async (req: Request, res: Response) => {
+    try {
+      const { updates } = req.body;
+      
+      if (!Array.isArray(updates)) {
+        return res.status(400).json({ error: "Updates must be an array" });
+      }
+
+      // Validate each update
+      const validatedUpdates = updates.map((update: any) => {
+        if (!update.id) {
+          throw new Error("Each update must have an id");
+        }
+        return {
+          id: update.id,
+          updates: updateTaskSchema.parse(update.updates),
+        };
+      });
+
+      // Apply all updates
+      const updatedTasks = await Promise.all(
+        validatedUpdates.map(async ({ id, updates }) => {
+          return await storage.updateTask(id, updates);
+        })
+      );
+
+      // Filter out any null results (task not found)
+      const successfulUpdates = updatedTasks.filter(task => task !== null);
+
+      // Invalidate tasks cache
+      dataCacheService.invalidateTasks();
+
+      res.json({
+        count: successfulUpdates.length,
+        tasks: successfulUpdates,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("[PATCH /api/tasks/bulk] Error:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to update tasks" });
     }
   });
 
@@ -521,6 +568,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("[POST /api/ai/day-plan] Error:", error);
       res.status(500).json({ error: "Failed to generate day plan" });
+    }
+  });
+
+  // AI Reorganize (Eisenhower Matrix) endpoint
+  app.post("/api/ai/reorganize", async (req: Request, res: Response) => {
+    try {
+      // Check usage limit (once per day)
+      const usageCheck = await checkUsage('ai_reorganize');
+      if (!usageCheck.allowed) {
+        return res.status(429).json({ 
+          error: `Reorganize limit reached. You can reorganize ${usageCheck.limit} time per day. Resets tomorrow.`,
+          remaining: usageCheck.remaining,
+          limit: usageCheck.limit,
+        });
+      }
+
+      const { taskIds } = req.body;
+      
+      if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
+        return res.status(400).json({ error: "taskIds array is required and must not be empty" });
+      }
+
+      // Fetch all tasks
+      const allTasks = await storage.getAllTasks();
+      const taskMap = new Map(allTasks.map(t => [t.id, t]));
+      
+      const selectedTasks = taskIds
+        .map((taskId: string) => taskMap.get(taskId))
+        .filter((t): t is Task => t !== undefined);
+
+      if (selectedTasks.length === 0) {
+        return res.status(400).json({ error: "No valid tasks found" });
+      }
+
+      // Calculate 7-day completion ratio
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      const recentTasks = allTasks.filter(t => {
+        const createdAt = new Date(t.createdAt);
+        return createdAt >= sevenDaysAgo;
+      });
+      
+      const completedRecent = recentTasks.filter(t => t.status === 'completed').length;
+      const completedRatio7d = recentTasks.length > 0 ? completedRecent / recentTasks.length : 0.5;
+
+      // Get AI reorganization suggestions
+      const suggestions = await reorganizeTasks({
+        tasks: selectedTasks.map(t => ({
+          id: t.id,
+          title: t.title,
+          description: t.description || undefined,
+          priority: t.priority,
+          status: t.status,
+          dueDate: t.dueDate ? t.dueDate.toISOString() : undefined,
+        })),
+        completedRatio7d,
+      });
+
+      // Increment usage counter
+      await incrementUsage('ai_reorganize');
+
+      res.json({
+        suggestions,
+        completedRatio7d: Math.round(completedRatio7d * 100) / 100,
+        usage: {
+          remaining: usageCheck.remaining - 1,
+          limit: usageCheck.limit,
+        },
+      });
+    } catch (error) {
+      console.error("[POST /api/ai/reorganize] Error:", error);
+      res.status(500).json({ error: "Failed to reorganize tasks" });
     }
   });
 
