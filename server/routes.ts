@@ -55,6 +55,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { pushNotificationsEnabled } = req.body;
+
+      if (typeof pushNotificationsEnabled !== 'boolean') {
+        return res.status(400).json({ message: "pushNotificationsEnabled must be a boolean" });
+      }
+
+      const updatedUser = await storage.updateUser(userId, { pushNotificationsEnabled });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(updatedUser);
+    } catch (error) {
+      logger.apiError('PATCH /api/auth/user', error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
   // Admin routes
   app.get('/api/admin/users', isAuthenticated, async (req: any, res) => {
     try {

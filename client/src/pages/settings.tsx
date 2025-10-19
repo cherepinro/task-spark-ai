@@ -4,13 +4,15 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Settings as SettingsIcon, Zap } from "lucide-react";
+import { Settings as SettingsIcon, Zap, Bell } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { UserSettings } from "@shared/schema";
+import type { UserSettings, User } from "@shared/schema";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Settings() {
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const { data: settings, isLoading } = useQuery<UserSettings>({
     queryKey: ["/api/settings"],
@@ -26,6 +28,20 @@ export default function Settings() {
       toast({
         title: "Settings updated",
         description: "Your preferences have been saved.",
+      });
+    },
+  });
+
+  const updateUserPreferences = useMutation({
+    mutationFn: async (updates: Partial<User>) => {
+      const res = await apiRequest("PATCH", "/api/auth/user", updates);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: "Preferences updated",
+        description: "Your account preferences have been saved.",
       });
     },
   });
@@ -52,6 +68,39 @@ export default function Settings() {
         </div>
 
         <div className="space-y-4">
+          {/* Push Notifications Settings */}
+          <Card data-testid="card-push-notifications-settings">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5 text-primary" />
+                Notifications
+              </CardTitle>
+              <CardDescription>
+                Control task reminders and push notifications on your devices
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <Label htmlFor="push-notifications-enabled" className="text-base">
+                    Enable Push Notifications
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Receive reminders for tasks due soon and high-priority items
+                  </p>
+                </div>
+                <Switch
+                  id="push-notifications-enabled"
+                  checked={user?.pushNotificationsEnabled || false}
+                  onCheckedChange={(checked) => {
+                    updateUserPreferences.mutate({ pushNotificationsEnabled: checked });
+                  }}
+                  data-testid="switch-push-notifications-enabled"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Focus Sprint Settings */}
           <Card data-testid="card-focus-sprint-settings">
             <CardHeader>
