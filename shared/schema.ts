@@ -81,6 +81,7 @@ export const userStats = pgTable("user_stats", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().default("default"),
   sprintsCompleted: integer("sprints_completed").notNull().default(0),
+  lastReorganizeAt: timestamp("last_reorganize_at", { mode: "date" }),
   createdAt: timestamp("created_at", { mode: "date" }).notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at", { mode: "date" }).notNull().default(sql`now()`),
 });

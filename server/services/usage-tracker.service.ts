@@ -8,6 +8,7 @@ export const USAGE_LIMITS = {
   bulk_import: { monthly: 20, label: "Bulk Task Import" },
   ai_chat: { monthly: 50, label: "AI Chat Messages" },
   day_plan: { daily: 1, label: "AI Day Planner" },
+  ai_reorganize: { daily: 1, label: "AI Reorganize (Eisenhower)" },
   tasks: { total: 500, label: "Total Tasks" },
   projects: { total: 50, label: "Total Projects" },
 } as const;
@@ -151,7 +152,7 @@ export async function incrementUsage(
 }
 
 export async function getAllUsage(userId: string = "default"): Promise<Record<FeatureType, UsageCheck>> {
-  const features: FeatureType[] = ['ai_decompose', 'bulk_import', 'ai_chat', 'day_plan', 'tasks', 'projects'];
+  const features: FeatureType[] = ['ai_decompose', 'bulk_import', 'ai_chat', 'day_plan', 'ai_reorganize', 'tasks', 'projects'];
   
   const usageData = await Promise.all(
     features.map(async (feature) => ({

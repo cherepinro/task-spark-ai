@@ -80,6 +80,7 @@
     "react-hook-form": "^7.55.0",
     "react-icons": "^5.4.0",
     "react-resizable-panels": "^2.1.7",
+    "react-tinder-card": "^1.6.4",
     "recharts": "^2.15.2",
     "supertest": "^7.1.4",
     "swagger-ui-express": "^5.0.1",
