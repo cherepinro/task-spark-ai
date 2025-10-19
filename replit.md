@@ -62,25 +62,36 @@ TaskSpark AI is an intelligent task management application powered by AI, availa
 
 ### API Routes
 - `GET /api/tasks?search=&priority=&status=&projectId=` - Get tasks with optional filters
-- `POST /api/tasks` - Create new task
-- `POST /api/tasks/bulk-import` - Import multiple tasks from markdown checklist
+- `POST /api/tasks` - Create new task (enforces 500 task limit)
+- `POST /api/tasks/bulk-import` - Import multiple tasks from markdown checklist (enforces 20/month limit)
 - `PATCH /api/tasks/:id` - Update task
 - `DELETE /api/tasks/:id` - Delete task
 - `GET /api/projects` - Get all projects
-- `POST /api/projects` - Create new project
+- `POST /api/projects` - Create new project (enforces 50 project limit)
 - `DELETE /api/projects/:id` - Delete project
 - `GET /api/insights` - Get AI-generated insights
 - `POST /api/ai/suggest` - Get AI suggestions for task
 - `POST /api/ai/parse` - Parse natural language into task
-- `POST /api/ai/chat` - AI chat conversation
-- `POST /api/ai/decompose` - AI task decomposition (splits task into 3-7 subtasks with hours)
+- `POST /api/ai/chat` - AI chat conversation (enforces 50/month limit)
+- `POST /api/ai/decompose` - AI task decomposition (enforces 5/month limit, splits task into 3-7 subtasks with hours)
 - `GET /api/templates` - Get all task templates
 - `POST /api/templates` - Create new task template
 - `DELETE /api/templates/:id` - Delete task template
 - `POST /api/templates/:id/create-task` - Create task from template
+- `GET /api/usage` - Get current usage statistics for all features
+- `GET /api/cache/stats` - Get cache performance statistics
+- `POST /api/cache/clear` - Clear all caches (admin/debug)
 - `GET /docs` - Swagger API documentation
 
 ## Recent Changes
+- 2025-10-19: **Comprehensive Usage Tracking & Limiting System** - Monitor and enforce usage across all features
+  - Added featureType column to quotaUsage schema for multi-feature tracking
+  - UsageTracker service with configurable limits per feature type
+  - GET /api/usage endpoint returns real-time usage for all features
+  - Usage enforcement at API level: tasks (500 total), projects (50 total), bulk imports (20/month), AI breakdowns (5/month), AI chat (50/month)
+  - UsageWidget component on Dashboard with progress bars, color-coded warnings, and auto-refresh
+  - 429 status codes with detailed error messages when limits exceeded
+  - Full E2E test coverage with Playwright
 - 2025-10-19: **Bulk Task Import from Checklist** - Import multiple tasks at once from markdown format
   - POST /api/tasks/bulk-import endpoint accepting markdown checklist format
   - BulkImportDialog component with live task count preview
@@ -163,6 +174,11 @@ TaskSpark AI is an intelligent task management application powered by AI, availa
 - Kanban board view
 
 ## Implemented Features
+- ✅ **Usage Tracking & Limiting System** - Monitor feature usage with visual progress bars on dashboard
+  - Track 5 feature types: tasks (500 total), projects (50 total), bulk imports (20/month), AI breakdowns (5/month), AI chat (50/month)
+  - Real-time usage widget with color-coded warnings (yellow at 80%, red at 100%)
+  - API enforcement returns 429 status when limits exceeded
+  - Auto-refreshing dashboard widget shows remaining quota
 - ✅ **Native Android Mobile App** - Full Capacitor integration with same codebase
 - ✅ **Bulk Task Import from Checklist** - Paste markdown checklists to create multiple tasks instantly
 - ✅ Complete task management with CRUD operations
