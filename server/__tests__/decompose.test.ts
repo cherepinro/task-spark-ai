@@ -4,6 +4,44 @@ import express, { type Express } from 'express';
 import { registerRoutes } from '../routes';
 import type { Server } from 'http';
 
+// Mock OpenAI to prevent browser environment error
+vi.mock('openai', () => {
+  return {
+    default: vi.fn().mockImplementation(() => ({
+      chat: {
+        completions: {
+          create: vi.fn().mockResolvedValue({
+            choices: [{
+              message: {
+                content: JSON.stringify([
+                  { id: '1', title: 'Subtask 1', hours: 2 },
+                  { id: '2', title: 'Subtask 2', hours: 3 }
+                ])
+              }
+            }]
+          })
+        }
+      }
+    })),
+    OpenAI: vi.fn().mockImplementation(() => ({
+      chat: {
+        completions: {
+          create: vi.fn().mockResolvedValue({
+            choices: [{
+              message: {
+                content: JSON.stringify([
+                  { id: '1', title: 'Subtask 1', hours: 2 },
+                  { id: '2', title: 'Subtask 2', hours: 3 }
+                ])
+              }
+            }]
+          })
+        }
+      }
+    }))
+  };
+});
+
 describe('POST /api/ai/decompose', () => {
   let app: Express;
   let server: Server;

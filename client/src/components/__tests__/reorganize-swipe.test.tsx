@@ -25,7 +25,7 @@ const mockTasks: Task[] = [
     priority: 'high',
     dueDate: null,
     projectId: null,
-    aiSuggested: false,
+    isAISuggested: false,
     aiPriority: null,
     aiCategory: null,
     aiReasoning: null,
@@ -34,6 +34,8 @@ const mockTasks: Task[] = [
     completedAt: null,
     recurrence: null,
     tags: [],
+    hours: null,
+    parentTaskId: null,
   },
   {
     id: 'task-2',
@@ -43,7 +45,7 @@ const mockTasks: Task[] = [
     priority: 'low',
     dueDate: null,
     projectId: null,
-    aiSuggested: false,
+    isAISuggested: false,
     aiPriority: null,
     aiCategory: null,
     aiReasoning: null,
@@ -52,6 +54,8 @@ const mockTasks: Task[] = [
     completedAt: null,
     recurrence: null,
     tags: [],
+    hours: null,
+    parentTaskId: null,
   },
 ];
 

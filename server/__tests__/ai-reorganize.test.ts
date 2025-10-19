@@ -1,8 +1,50 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import request from 'supertest';
 import express, { type Express } from 'express';
 import { registerRoutes } from '../routes';
 import type { Server } from 'http';
+
+// Mock OpenAI to prevent browser environment error
+vi.mock('openai', () => {
+  return {
+    default: vi.fn().mockImplementation(() => ({
+      chat: {
+        completions: {
+          create: vi.fn().mockResolvedValue({
+            choices: [{
+              message: {
+                content: JSON.stringify({
+                  suggestions: [
+                    { id: 'task-1', action: 'defer', reason: 'Not urgent, can wait' },
+                    { id: 'task-2', action: 'delete', reason: 'Low priority' }
+                  ]
+                })
+              }
+            }]
+          })
+        }
+      }
+    })),
+    OpenAI: vi.fn().mockImplementation(() => ({
+      chat: {
+        completions: {
+          create: vi.fn().mockResolvedValue({
+            choices: [{
+              message: {
+                content: JSON.stringify({
+                  suggestions: [
+                    { id: 'task-1', action: 'defer', reason: 'Not urgent, can wait' },
+                    { id: 'task-2', action: 'delete', reason: 'Low priority' }
+                  ]
+                })
+              }
+            }]
+          })
+        }
+      }
+    }))
+  };
+});
 
 describe('POST /api/ai/reorganize', () => {
   let app: Express;
