@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { type InsertTask } from "@shared/schema";
+import { type InsertTask, type Task } from "@shared/schema";
 import { TaskCard } from "@/components/task-card";
 import { EmptyState } from "@/components/empty-state";
 import { TaskCardSkeleton } from "@/components/loading-state";
@@ -54,6 +54,30 @@ export default function Upcoming() {
     },
   });
 
+  const breakdownTaskMutation = useMutation({
+    mutationFn: async (title: string) => {
+      const response = await apiRequest("POST", "/api/ai/decompose", { title });
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      const taskCount = data.tasks?.length || 0;
+      const totalHours = data.tasks?.reduce((sum: number, t: any) => sum + (t.hours || 0), 0) || 0;
+      toast({
+        title: "Task broken down successfully! ⚡",
+        description: `Created ${taskCount} subtasks (${totalHours}h total). Remaining quota: ${data.remainingQuota}/5`,
+      });
+    },
+    onError: (error: any) => {
+      const message = error.message || "Failed to breakdown task";
+      toast({
+        title: "Breakdown failed",
+        description: message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleToggleComplete = (taskId: string) => {
     const task = tasks?.find((t) => t.id === taskId);
     if (task) {
@@ -64,6 +88,10 @@ export default function Upcoming() {
   const handleCreateTask = async (data: InsertTask) => {
     await createTaskMutation.mutateAsync(data);
     setShowTaskModal(false);
+  };
+
+  const handleBreakdownTask = (task: any) => {
+    breakdownTaskMutation.mutate(task.title);
   };
 
   if (isLoading) {
@@ -126,6 +154,7 @@ export default function Upcoming() {
                       task={task}
                       onToggleComplete={handleToggleComplete}
                       onDelete={(id) => deleteTaskMutation.mutate(id)}
+                      onBreakdown={handleBreakdownTask}
                     />
                   ))}
                 </div>
