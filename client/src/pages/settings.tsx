@@ -18,7 +18,7 @@ export default function Settings() {
 
   const updateSettings = useMutation({
     mutationFn: async (updates: Partial<UserSettings>) => {
-      const res = await apiRequest("/api/settings", "PATCH", updates);
+      const res = await apiRequest("PATCH", "/api/settings", updates);
       return res.json();
     },
     onSuccess: () => {

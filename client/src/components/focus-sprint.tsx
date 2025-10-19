@@ -96,7 +96,7 @@ export function FocusSprint({ sound, onClose }: FocusSprintProps) {
 
   const completeSprint = async () => {
     try {
-      await apiRequest("/api/stats/sprint-complete", "POST", {});
+      await apiRequest("POST", "/api/stats/sprint-complete", {});
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       toast({
         title: "Sprint completed! 🎉",
