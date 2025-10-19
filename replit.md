@@ -29,6 +29,8 @@ TaskSpark AI is an intelligent task management application powered by AI, availa
    - Upcoming - Tasks grouped by due date
    - Projects - Project management
    - AI Insights - Intelligent recommendations
+   - Day Planner - AI-optimized daily schedule with drag-and-drop time blocks
+   - Templates - Reusable task templates
    - Archive - Completed/archived tasks
 6. **Dark/Light Mode** - Full theme switching support
 
@@ -74,6 +76,7 @@ TaskSpark AI is an intelligent task management application powered by AI, availa
 - `POST /api/ai/parse` - Parse natural language into task
 - `POST /api/ai/chat` - AI chat conversation (enforces 50/month limit)
 - `POST /api/ai/decompose` - AI task decomposition (enforces 5/month limit, splits task into 3-7 subtasks with hours)
+- `POST /api/ai/day-plan` - Generate AI-optimized daily schedule (enforces 1/day limit, returns time blocks 08:00-22:00)
 - `GET /api/templates` - Get all task templates
 - `POST /api/templates` - Create new task template
 - `DELETE /api/templates/:id` - Delete task template
@@ -84,6 +87,15 @@ TaskSpark AI is an intelligent task management application powered by AI, availa
 - `GET /docs` - Swagger API documentation
 
 ## Recent Changes
+- 2025-10-19: **AI Day Planner Feature** - Generate optimized daily schedules with drag-and-drop time blocks
+  - POST /api/ai/day-plan endpoint with GPT-5 integration (default temperature)
+  - DayPlan page at /day-plan with task selector and vertical timeline (08:00-22:00)
+  - Drag-and-drop reordering with @hello-pangea/dnd
+  - ICS file export for calendar integration
+  - Apply button to update task dueDates based on schedule
+  - Daily usage limit: 1 plan per day (tracked in quotaUsage with YYYY-MM-DD format)
+  - CalendarClock icon in sidebar navigation
+  - Database schema: expanded month column to varchar(10) for daily tracking
 - 2025-10-19: **Comprehensive Usage Tracking & Limiting System** - Monitor and enforce usage across all features
   - Added featureType column to quotaUsage schema for multi-feature tracking
   - UsageTracker service with configurable limits per feature type
@@ -174,8 +186,14 @@ TaskSpark AI is an intelligent task management application powered by AI, availa
 - Kanban board view
 
 ## Implemented Features
+- ✅ **AI Day Planner** - Generate optimized daily schedules with one click
+  - Select tasks and generate AI-powered time blocks from 08:00-22:00
+  - Drag-and-drop reordering with visual timeline
+  - Export to ICS file for calendar apps
+  - Apply schedule to update task due dates
+  - 1 plan per day limit (resets daily at midnight)
 - ✅ **Usage Tracking & Limiting System** - Monitor feature usage with visual progress bars on dashboard
-  - Track 5 feature types: tasks (500 total), projects (50 total), bulk imports (20/month), AI breakdowns (5/month), AI chat (50/month)
+  - Track 6 feature types: tasks (500 total), projects (50 total), bulk imports (20/month), AI breakdowns (5/month), AI chat (50/month), day plans (1/day)
   - Real-time usage widget with color-coded warnings (yellow at 80%, red at 100%)
   - API enforcement returns 429 status when limits exceeded
   - Auto-refreshing dashboard widget shows remaining quota
