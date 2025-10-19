@@ -103,17 +103,59 @@ Test: Authenticated User Dashboard Access
 16. [DB] Cleanup test session
 ```
 
+### Running Tests in CI/CD
+
+For automated testing in CI/CD pipelines:
+
+1. **Set SESSION_SECRET environment variable** in your CI environment
+2. **Run test user creation** as part of test setup:
+   ```bash
+   tsx server/scripts/create-test-user.ts
+   ```
+3. **Use auth helpers** in your test scripts
+4. **Clean up** test sessions after tests complete
+
+### Manual Testing
+
+For quick manual testing:
+
+```bash
+# 1. Create test session
+tsx server/scripts/test-session-example.ts
+
+# 2. Copy the cookie value from output
+# 3. In browser DevTools console:
+document.cookie = "connect.sid={value-from-output}; path=/; domain=localhost"
+
+# 4. Refresh page - you're now logged in as test user!
+```
+
 ### Troubleshooting
 
 **Session not working?**
-- Verify the session cookie format: `s:` prefix + sessionId
+- Verify the session cookie format: `s:` prefix + signed value
 - Check session expiry in database
 - Ensure user exists in users table
+- Verify SESSION_SECRET matches between session creation and app
 
 **403 Forbidden on AI endpoints?**
 - Verify `hasAIAccess` is true for test user
 - Check middleware in server/routes.ts
+- Ensure session is valid and not expired
 
 **Admin page not accessible?**
 - Verify `isAdmin` is true for test user
 - Check admin middleware protection
+
+**Automated tests failing with "SESSION_SECRET not available"?**
+- This is expected in sandboxed test environments
+- Set SESSION_SECRET in your CI/CD environment variables
+- Use the manual testing approach for local development
+
+### Files Created
+
+- `server/scripts/create-test-user.ts` - Creates test user in database
+- `server/test-utils/auth-helpers.ts` - Session creation and cookie signing
+- `server/scripts/test-session-example.ts` - Example session creation script
+- `test-credentials.json` - Test user credentials (gitignored)
+- `TESTING.md` - This documentation
