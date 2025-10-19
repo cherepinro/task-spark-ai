@@ -25,6 +25,7 @@ The API provides endpoints for:
 - ML features (`/api/ml/procrastination-score`)
 - Templates (`/api/templates`)
 - Usage and statistics (`/api/usage`, `/api/settings`, `/api/stats`)
+- Push notifications (`/api/push/token`)
 - Cache management (`/api/cache/stats`, `/api/cache/clear`)
 - Swagger API documentation (`/docs`)
 
@@ -53,8 +54,52 @@ TaskSpark AI includes a **FastAPI-based ML microservice** (`/ml` directory) for 
 
 The Express backend calculates features from task data, calls the ML service (with fallback heuristics if unavailable), and caches results for 1 hour. The Dashboard displays the score as a color-coded badge (green/yellow/red) that opens a bottom-sheet with actionable recommendations.
 
+## Push Notifications (PROMPT-13)
+TaskSpark AI implements **Firebase Cloud Messaging (FCM)** push notifications for Android devices:
+
+- **Backend Infrastructure**:
+  - `server/services/firebase.service.ts` - Firebase Admin SDK integration for sending FCM messages
+  - `server/services/notification.service.ts` - Notification service to send task due reminders
+  - `server/routes.ts` - API endpoints: `POST /api/push/token`, `DELETE /api/push/token`
+  - `shared/schema.ts` - `push_tokens` table for storing FCM device tokens
+  - Environment variable: `FIREBASE_SERVICE_ACCOUNT_JSON` (Firebase service account credentials)
+
+- **Frontend Integration**:
+  - `client/src/hooks/usePushNotifications.ts` - React hook for registering FCM tokens on app start
+  - Capacitor Push Notifications plugin (@capacitor/push-notifications)
+  - Automatic token registration on app launch (native platforms only)
+  - Foreground notification display via toast
+  - Deep link handling for opening specific tasks from notifications
+
+- **Deep Linking**:
+  - URL scheme: `taskspark://task/{taskId}`
+  - Configured in AndroidManifest.xml intent filter
+  - Opens specific task when notification is tapped
+  - Handled in `usePushNotifications` hook
+
+- **Notification Types**:
+  - Task due reminders (sent 1 hour before due date)
+  - High-priority task alerts
+  - AI insight notifications (future enhancement)
+
+- **Setup Requirements**:
+  - Firebase project with Android app registered (package: `ai.taskspark.app`)
+  - `google-services.json` file in `android/app/` directory
+  - Firebase service account JSON in environment variable
+  - Android manifest configuration for FCM and deep links
+  - See `PUSH_NOTIFICATIONS_SETUP.md` and `android/SETUP_PUSH_NOTIFICATIONS.md` for detailed setup
+
+- **Token Management**:
+  - Tokens stored in PostgreSQL `push_tokens` table with user association
+  - Automatic cleanup of invalid/expired tokens
+  - Support for multiple devices per user
+  - Platform tracking (android/ios)
+
+The notification service includes automatic detection and cleanup of invalid tokens, multicast messaging for sending to multiple devices, and integration with the task management system to send timely reminders.
+
 ## External Dependencies
 - **Database**: PostgreSQL (Neon) with Drizzle ORM
 - **AI Integration**: OpenAI via Replit AI Integrations (no API key required)
 - **Drag and Drop**: `@hello-pangea/dnd` for day planner reordering
 - **ML Service**: FastAPI microservice (optionally deployed to Fly.io)
+- **Push Notifications**: Firebase Cloud Messaging (FCM) via Firebase Admin SDK
