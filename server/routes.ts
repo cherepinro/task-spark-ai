@@ -6,6 +6,7 @@ import {
   updateTaskSchema,
   insertProjectSchema,
   insertTaskTemplateSchema,
+  insertUserSettingsSchema,
   type InsertTask,
   type Task,
 } from "@shared/schema";
@@ -670,6 +671,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "All caches cleared successfully" });
     } catch (error) {
       res.status(500).json({ error: "Failed to clear caches" });
+    }
+  });
+
+  // User settings routes
+  app.get("/api/settings", async (_req: Request, res: Response) => {
+    try {
+      const settings = await storage.getUserSettings();
+      
+      if (!settings) {
+        const defaultSettings = await storage.updateUserSettings({
+          focusSprintEnabled: false,
+          focusSprintSound: "soft-chime",
+        });
+        return res.json(defaultSettings);
+      }
+      
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch settings" });
+    }
+  });
+
+  app.patch("/api/settings", async (req: Request, res: Response) => {
+    try {
+      const validatedSettings = insertUserSettingsSchema.partial().parse(req.body);
+      const settings = await storage.updateUserSettings(validatedSettings);
+      res.json(settings);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid settings data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update settings" });
+    }
+  });
+
+  // User stats routes
+  app.get("/api/stats", async (_req: Request, res: Response) => {
+    try {
+      const stats = await storage.getUserStats();
+      
+      if (!stats) {
+        const defaultStats = await storage.incrementSprintCount();
+        return res.json({ ...defaultStats, sprintsCompleted: 0 });
+      }
+      
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch stats" });
+    }
+  });
+
+  app.post("/api/stats/sprint-complete", async (_req: Request, res: Response) => {
+    try {
+      const stats = await storage.incrementSprintCount();
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to increment sprint count" });
     }
   });
 

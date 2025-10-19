@@ -7,10 +7,16 @@ import {
   type InsertAIInsight,
   type TaskTemplate,
   type InsertTaskTemplate,
+  type UserSettings,
+  type InsertUserSettings,
+  type UserStats,
+  type InsertUserStats,
   tasks,
   projects,
   aiInsights,
   taskTemplates,
+  userSettings,
+  userStats,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, ilike } from "drizzle-orm";
@@ -46,6 +52,14 @@ export interface IStorage {
   createTemplate(template: InsertTaskTemplate): Promise<TaskTemplate>;
   updateTemplate(id: string, template: Partial<InsertTaskTemplate>): Promise<TaskTemplate | undefined>;
   deleteTemplate(id: string): Promise<boolean>;
+
+  // User Settings operations
+  getUserSettings(userId?: string): Promise<UserSettings | undefined>;
+  updateUserSettings(settings: Partial<InsertUserSettings>, userId?: string): Promise<UserSettings>;
+
+  // User Stats operations
+  getUserStats(userId?: string): Promise<UserStats | undefined>;
+  incrementSprintCount(userId?: string): Promise<UserStats>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -175,6 +189,59 @@ export class DatabaseStorage implements IStorage {
   async deleteTemplate(id: string): Promise<boolean> {
     const result = await db.delete(taskTemplates).where(eq(taskTemplates.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // User Settings operations
+  async getUserSettings(userId = "default"): Promise<UserSettings | undefined> {
+    const [settings] = await db.select().from(userSettings).where(eq(userSettings.userId, userId));
+    return settings || undefined;
+  }
+
+  async updateUserSettings(settings: Partial<InsertUserSettings>, userId = "default"): Promise<UserSettings> {
+    const existing = await this.getUserSettings(userId);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(userSettings)
+        .set({ ...settings, updatedAt: new Date() })
+        .where(eq(userSettings.userId, userId))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(userSettings)
+        .values({ userId, ...settings })
+        .returning();
+      return created;
+    }
+  }
+
+  // User Stats operations
+  async getUserStats(userId = "default"): Promise<UserStats | undefined> {
+    const [stats] = await db.select().from(userStats).where(eq(userStats.userId, userId));
+    return stats || undefined;
+  }
+
+  async incrementSprintCount(userId = "default"): Promise<UserStats> {
+    const existing = await this.getUserStats(userId);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(userStats)
+        .set({ 
+          sprintsCompleted: existing.sprintsCompleted + 1,
+          updatedAt: new Date()
+        })
+        .where(eq(userStats.userId, userId))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(userStats)
+        .values({ userId, sprintsCompleted: 1 })
+        .returning();
+      return created;
+    }
   }
 }
 

@@ -68,6 +68,23 @@ export const quotaUsage = pgTable("quota_usage", {
   updatedAt: timestamp("updated_at", { mode: "date" }).notNull().default(sql`now()`),
 });
 
+export const userSettings = pgTable("user_settings", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().default("default"),
+  focusSprintEnabled: boolean("focus_sprint_enabled").default(false),
+  focusSprintSound: varchar("focus_sprint_sound", { length: 50 }).default("soft-chime"),
+  createdAt: timestamp("created_at", { mode: "date" }).notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at", { mode: "date" }).notNull().default(sql`now()`),
+});
+
+export const userStats = pgTable("user_stats", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().default("default"),
+  sprintsCompleted: integer("sprints_completed").notNull().default(0),
+  createdAt: timestamp("created_at", { mode: "date" }).notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at", { mode: "date" }).notNull().default(sql`now()`),
+});
+
 // Relations
 export const tasksRelations = relations(tasks, ({ one }) => ({
   project: one(projects, {
@@ -141,6 +158,20 @@ export const insertTaskTemplateSchema = createInsertSchema(taskTemplates).omit({
   recurrenceInterval: z.string().optional(),
 });
 
+export const insertUserSettingsSchema = createInsertSchema(userSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  focusSprintSound: z.enum(["soft-chime", "white-noise", "nature-sounds"]).default("soft-chime"),
+});
+
+export const insertUserStatsSchema = createInsertSchema(userStats).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type Task = typeof tasks.$inferSelect;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type Project = typeof projects.$inferSelect;
@@ -150,3 +181,7 @@ export type InsertAIInsight = z.infer<typeof insertAIInsightSchema>;
 export type TaskTemplate = typeof taskTemplates.$inferSelect;
 export type InsertTaskTemplate = z.infer<typeof insertTaskTemplateSchema>;
 export type QuotaUsage = typeof quotaUsage.$inferSelect;
+export type UserSettings = typeof userSettings.$inferSelect;
+export type InsertUserSettings = z.infer<typeof insertUserSettingsSchema>;
+export type UserStats = typeof userStats.$inferSelect;
+export type InsertUserStats = z.infer<typeof insertUserStatsSchema>;
