@@ -182,6 +182,40 @@ task-spark-ai/
 └── android/              # Capacitor Android project
 ```
 
+## Testing & Quality Assurance
+
+### Regression Testing
+
+Before every deployment, run the comprehensive regression test suite:
+
+```
+Tell Replit Agent: "Run regression tests before deployment"
+```
+
+The test suite validates:
+- ✅ Task CRUD operations
+- ✅ AI features (decompose, day plan, reorganize, chat)
+- ✅ Project management
+- ✅ Bulk import & templates
+- ✅ Usage tracking & limits
+- ✅ Error handling & caching
+- ✅ All page navigation
+
+**Coverage**: 73 test steps across 10 critical scenarios
+
+See `REGRESSION_TESTING.md` for detailed testing documentation and `scripts/pre-deployment-checklist.md` for the full deployment checklist.
+
+### Recent Improvements
+
+**Architecture Improvements** (Oct 2025):
+- ✅ Fixed cache invalidation (selective vs nuclear approach)
+- ✅ Enhanced type safety (removed all `any` types)
+- ✅ Added structured logging system
+- ✅ Fixed React Query cache staleness issue
+- ✅ Improved error handling consistency
+
+See `ARCHITECTURE_IMPROVEMENTS.md` for all technical improvements.
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
