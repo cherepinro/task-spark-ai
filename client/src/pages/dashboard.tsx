@@ -8,8 +8,9 @@ import { DashboardSkeleton } from "@/components/loading-state";
 import { TaskCreationModal } from "@/components/task-creation-modal";
 import { SaveTemplateDialog } from "@/components/save-template-dialog";
 import { BulkImportDialog } from "@/components/bulk-import-dialog";
+import { ReorganizeSwipe } from "@/components/reorganize-swipe";
 import { UsageWidget } from "@/components/usage-widget";
-import { CheckCircle2, Clock, TrendingUp, Sparkles, ListTodo, Plus, ListChecks } from "lucide-react";
+import { CheckCircle2, Clock, TrendingUp, Sparkles, ListTodo, Plus, ListChecks, ArrowDownUp } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -20,6 +21,7 @@ import { useSaveTemplate } from "@/hooks/use-save-template";
 export default function Dashboard() {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showReorganizeDrawer, setShowReorganizeDrawer] = useState(false);
   const { toast } = useToast();
   const {
     taskToSave,
@@ -196,6 +198,17 @@ export default function Dashboard() {
             </h2>
             <div className="flex gap-2">
               <Button
+                onClick={() => setShowReorganizeDrawer(true)}
+                size="sm"
+                variant="outline"
+                className="gap-2"
+                data-testid="button-reorganize"
+                disabled={upcomingTasks.length === 0}
+              >
+                <ArrowDownUp className="h-4 w-4" />
+                Reorganize
+              </Button>
+              <Button
                 onClick={() => setShowImportDialog(true)}
                 size="sm"
                 variant="outline"
@@ -279,6 +292,12 @@ export default function Dashboard() {
       <BulkImportDialog
         open={showImportDialog}
         onOpenChange={setShowImportDialog}
+      />
+
+      <ReorganizeSwipe
+        open={showReorganizeDrawer}
+        onOpenChange={setShowReorganizeDrawer}
+        tasks={upcomingTasks}
       />
     </>
   );
