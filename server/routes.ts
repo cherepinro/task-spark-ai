@@ -75,8 +75,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(task);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("[POST /api/tasks] Validation error:", error.errors);
         return res.status(400).json({ error: error.errors });
       }
+      console.error("[POST /api/tasks] Error creating task:", error);
       res.status(500).json({ error: "Failed to create task" });
     }
   });

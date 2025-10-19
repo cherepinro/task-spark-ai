@@ -100,6 +100,8 @@ const baseTaskSchema = createInsertSchema(tasks).omit({
   dueDate: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional(),
   completedAt: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional(),
   recurrenceEndDate: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional(),
+  // Allow hours as string or number (Drizzle handles conversion)
+  hours: z.union([z.string(), z.number()]).optional().nullable(),
 });
 
 export const insertTaskSchema = baseTaskSchema.refine((data) => {

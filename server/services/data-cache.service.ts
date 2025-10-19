@@ -33,14 +33,10 @@ export const dataCacheService = {
   },
 
   invalidateTasks: (): void => {
-    // Clear all task caches by pattern
-    const stats = cacheService.getStats();
-    const keys = Object.keys((cacheService as any).cache.data || {});
-    keys.forEach(key => {
-      if (key.startsWith('tasks:')) {
-        cacheService.del(key);
-      }
-    });
+    // Clear all task caches by clearing the entire cache
+    // Since we don't have direct access to cache keys, we flush all
+    // This is acceptable as caches will rebuild quickly
+    cacheService.flush();
   },
 
   // Projects caching
@@ -53,9 +49,8 @@ export const dataCacheService = {
   },
 
   invalidateProjects: (): void => {
-    cacheService.del(dataCacheService.generateProjectsKey());
-    // Also invalidate tasks since they reference projects
-    dataCacheService.invalidateTasks();
+    // Clear all caches since tasks reference projects
+    cacheService.flush();
   },
 
   // Insights caching
@@ -68,6 +63,7 @@ export const dataCacheService = {
   },
 
   invalidateInsights: (): void => {
+    // Clear insights cache
     cacheService.del(dataCacheService.generateInsightsKey());
   },
 
@@ -81,6 +77,7 @@ export const dataCacheService = {
   },
 
   invalidateTemplates: (): void => {
+    // Clear templates cache
     cacheService.del(dataCacheService.generateTemplatesKey());
   },
 
