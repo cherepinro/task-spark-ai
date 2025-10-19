@@ -1,12 +1,13 @@
 # TaskSpark AI
 
 ## Overview
-TaskSpark AI is an intelligent task management application powered by AI. It helps users organize, prioritize, and manage their tasks with smart categorization, AI-powered insights, and productivity analytics.
+TaskSpark AI is an intelligent task management application powered by AI, available as both a **web application** and **native Android mobile app**. It helps users organize, prioritize, and manage their tasks with smart categorization, AI-powered insights, and productivity analytics.
 
 ## Project Architecture
 
 ### Tech Stack
 - **Frontend**: React 18 + TypeScript, Vite, Tailwind CSS, Shadcn UI
+- **Mobile**: Capacitor 7.4+ (Android native app from same codebase)
 - **Backend**: Express.js + TypeScript
 - **Database**: PostgreSQL (Neon) with Drizzle ORM
 - **AI Integration**: OpenAI via Replit AI Integrations (no API key required)
@@ -77,6 +78,13 @@ TaskSpark AI is an intelligent task management application powered by AI. It hel
 - `POST /api/templates/:id/create-task` - Create task from template
 
 ## Recent Changes
+- 2025-10-19: **Android Mobile App Support** - Full Capacitor integration for native Android app
+  - Added Capacitor 7.4+ with Android platform
+  - Mobile-optimized viewport and meta tags
+  - Native plugins: App, Keyboard, Status Bar
+  - Same codebase serves both web and mobile
+  - Full documentation in MOBILE.md
+  - Build outputs to android/ directory ready for Android Studio
 - 2025-10-18: **Task Templates Feature Complete** - Save frequently used tasks as reusable templates
   - Added task_templates table with name, title, description, priority, recurrence settings
   - Backend API routes: GET/POST/DELETE /api/templates, POST /api/templates/:id/create-task
@@ -106,8 +114,13 @@ TaskSpark AI is an intelligent task management application powered by AI. It hel
 - ✅ Phase 6: AI Chat Integration (Complete)
 - ✅ Phase 7: Recurring Tasks (Complete)
 - ✅ Phase 8: Task Templates (Complete)
+- ✅ Phase 9: Android Mobile App (Complete)
 
 ## Next Features
+- iOS mobile app support
+- App icon and splash screen customization
+- Push notifications for mobile
+- Offline support with local storage
 - Task collaboration & sharing
 - Advanced analytics dashboard
 - File attachments
@@ -115,6 +128,7 @@ TaskSpark AI is an intelligent task management application powered by AI. It hel
 - Kanban board view
 
 ## Implemented Features
+- ✅ **Native Android Mobile App** - Full Capacitor integration with same codebase
 - ✅ Complete task management with CRUD operations
 - ✅ PostgreSQL database persistence with Drizzle ORM
 - ✅ Real-time search and filtering (by title/description, priority, status, project)
@@ -134,7 +148,7 @@ TaskSpark AI is an intelligent task management application powered by AI. It hel
 - ✅ Command palette with keyboard shortcuts (⌘K)
 - ✅ Beautiful empty states and loading skeletons
 - ✅ Real-time task completion tracking
-- ✅ Responsive design across all breakpoints
+- ✅ Responsive design across all breakpoints (web & mobile)
 
 ## User Preferences
 - Prioritize visual excellence and polish
