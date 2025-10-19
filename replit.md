@@ -80,6 +80,13 @@ TaskSpark AI is an intelligent task management application powered by AI, availa
 - `GET /docs` - Swagger API documentation (NEW)
 
 ## Recent Changes
+- 2025-10-19: **Task Breakdown UI Feature** - Full frontend integration for AI task decomposition
+  - "Breakdown Task" menu item in task cards with Zap icon
+  - One-click task decomposition available on Dashboard, Today, and Upcoming pages
+  - Hours badge display with Clock icon showing time estimates (e.g., "4h", "8h")
+  - Success toast with subtask count, total hours, and quota information
+  - Automatically hides breakdown option for completed tasks
+  - Integrated with existing POST /api/ai/decompose endpoint
 - 2025-10-19: **Performance Optimization System** - 140x faster data access with caching & indexing
   - Database indexes on 13 columns (priority, status, dueDate, projectId, etc.)
   - In-memory caching layer for tasks, projects, insights, templates (5-30min TTL)
@@ -153,6 +160,7 @@ TaskSpark AI is an intelligent task management application powered by AI, availa
 - ✅ Real-time search and filtering (by title/description, priority, status, project)
 - ✅ Global filter state management with FilterContext
 - ✅ **AI Chat with Natural Language Task Creation** - Type "add task buy milk" and it creates the task
+- ✅ **AI Task Breakdown** - One-click breakdown of complex tasks into 3-7 subtasks with time estimates
 - ✅ AI-powered task analysis and categorization
 - ✅ Priority-based task organization
 - ✅ Dashboard with productivity metrics
@@ -163,7 +171,8 @@ TaskSpark AI is an intelligent task management application powered by AI, availa
 - ✅ Automatic task creation from AI conversations
 - ✅ **Recurring Tasks** - Daily, weekly, monthly, yearly patterns with auto-generation
 - ✅ **Task Templates** - Save and reuse frequently used tasks
-- ✅ Toast notifications for task creation
+- ✅ **Hours Tracking** - Visual time estimates on tasks with purple badges
+- ✅ Toast notifications for task creation and AI operations
 - ✅ Command palette with keyboard shortcuts (⌘K)
 - ✅ Beautiful empty states and loading skeletons
 - ✅ Real-time task completion tracking
