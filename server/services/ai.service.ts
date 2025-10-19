@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import type { InsertTask } from "@shared/schema";
 import { CACHE_NAMESPACE } from './data-cache.service';
+import { logger } from './logger.service';
 
 /*
 Follow these instructions when using this blueprint:
@@ -58,7 +59,7 @@ Return as JSON with keys: priority, category, suggestions (array)`;
 
     return JSON.parse(content) as AISuggestion;
   } catch (error) {
-    console.error("AI analysis error:", error);
+    logger.serviceError('ai', 'analyzeTask', error, { taskTitle: task.title });
     return { category: "General" };
   }
 }
@@ -95,7 +96,7 @@ Return as JSON with keys: title, description, priority, category`;
 
     return JSON.parse(content) as ParsedTask;
   } catch (error) {
-    console.error("AI parsing error:", error);
+    logger.serviceError('ai', 'parseNaturalLanguageTask', error, { input });
     return {
       title: input,
       priority: "medium",
@@ -103,8 +104,14 @@ Return as JSON with keys: title, description, priority, category`;
   }
 }
 
+interface TaskSummary {
+  status: string;
+  priority: string;
+  title: string;
+}
+
 export async function generateProductivityInsight(
-  tasks: any[]
+  tasks: TaskSummary[]
 ): Promise<{ title: string; description: string }> {
   try {
     const completedCount = tasks.filter((t) => t.status === "completed").length;
@@ -139,7 +146,7 @@ Return as JSON with keys: title, description`;
 
     return JSON.parse(content);
   } catch (error) {
-    console.error("AI insight generation error:", error);
+    logger.serviceError('ai', 'generateProductivityInsight', error, { taskCount: tasks.length });
     return {
       title: "Keep going!",
       description: "You're making progress on your tasks.",
@@ -160,7 +167,7 @@ export interface ChatResponse {
 export async function chatWithAI(
   message: string,
   conversationHistory: ChatMessage[],
-  tasks: any[]
+  tasks: TaskSummary[]
 ): Promise<ChatResponse> {
   const taskSummary = tasks.length > 0 
     ? tasks.slice(0, 3).map(t => `${t.title} (${t.priority}, ${t.status})`).join(', ')
@@ -173,7 +180,7 @@ export async function chatWithAI(
     (msg) => msg.content && typeof msg.content === "string" && msg.content.trim() !== ""
   );
 
-  const messages: any[] = [
+  const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
     { role: "system", content: systemPrompt },
     ...validHistory,
     { role: "user", content: message },
