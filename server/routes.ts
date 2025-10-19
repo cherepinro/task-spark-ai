@@ -68,6 +68,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/tasks", async (req: Request, res: Response) => {
     try {
+      // Check task limit
+      const taskUsage = await checkUsage('tasks');
+      if (!taskUsage.allowed) {
+        return res.status(429).json({ 
+          error: `Task limit reached. You have created ${taskUsage.limit} tasks (maximum allowed). Please delete some tasks to create new ones.`,
+          remaining: taskUsage.remaining,
+          limit: taskUsage.limit,
+        });
+      }
+
       const validatedData = insertTaskSchema.parse(req.body);
       const task = await storage.createTask(validatedData);
       
@@ -248,6 +258,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/projects", async (req: Request, res: Response) => {
     try {
+      // Check project limit
+      const projectUsage = await checkUsage('projects');
+      if (!projectUsage.allowed) {
+        return res.status(429).json({ 
+          error: `Project limit reached. You have created ${projectUsage.limit} projects (maximum allowed). Please delete some projects to create new ones.`,
+          remaining: projectUsage.remaining,
+          limit: projectUsage.limit,
+        });
+      }
+
       const validatedData = insertProjectSchema.parse(req.body);
       const project = await storage.createProject(validatedData);
       
