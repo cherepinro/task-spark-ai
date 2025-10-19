@@ -10,6 +10,7 @@ import { SaveTemplateDialog } from "@/components/save-template-dialog";
 import { BulkImportDialog } from "@/components/bulk-import-dialog";
 import { ReorganizeSwipe } from "@/components/reorganize-swipe";
 import { UsageWidget } from "@/components/usage-widget";
+import { ProcrastinationScore } from "@/components/ProcrastinationScore";
 import { CheckCircle2, Clock, TrendingUp, Sparkles, ListTodo, Plus, ListChecks, ArrowDownUp } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -140,11 +141,14 @@ export default function Dashboard() {
       <div className="min-h-screen p-6 space-y-6">
         {/* AI Insights Hero */}
         <div className="relative rounded-lg bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-6 border border-primary/20">
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-semibold" data-testid="text-ai-insights-title">
-              AI-Powered Insights
-            </h2>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold" data-testid="text-ai-insights-title">
+                AI-Powered Insights
+              </h2>
+            </div>
+            <ProcrastinationScore />
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             <Card className="p-4">
