@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { type InsertTask } from "@shared/schema";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { type InsertTask, type UserSettings } from "@shared/schema";
 import { TaskCard } from "@/components/task-card";
 import { EmptyState } from "@/components/empty-state";
 import { TaskCardSkeleton } from "@/components/loading-state";
 import { TaskCreationModal } from "@/components/task-creation-modal";
 import { SaveTemplateDialog } from "@/components/save-template-dialog";
-import { Calendar, Plus } from "lucide-react";
+import { FocusSprint } from "@/components/focus-sprint";
+import { Calendar, Plus, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -16,6 +17,7 @@ import { useSaveTemplate } from "@/hooks/use-save-template";
 
 export default function Today() {
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showFocusSprint, setShowFocusSprint] = useState(false);
   const { toast } = useToast();
   const {
     taskToSave,
@@ -26,6 +28,9 @@ export default function Today() {
   } = useSaveTemplate();
 
   const { data: tasks, isLoading } = useFilteredTasks();
+  const { data: settings } = useQuery<UserSettings>({
+    queryKey: ["/api/settings"],
+  });
 
   const toggleCompleteMutation = useMutation({
     mutationFn: async ({ taskId, currentStatus }: { taskId: string; currentStatus: string }) => {
@@ -120,6 +125,13 @@ export default function Today() {
 
   return (
     <>
+      {showFocusSprint && (
+        <FocusSprint
+          sound={settings?.focusSprintSound || "soft-chime"}
+          onClose={() => setShowFocusSprint(false)}
+        />
+      )}
+      
       <div className="min-h-screen p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -131,10 +143,23 @@ export default function Today() {
               {format(today, "EEEE, MMMM d, yyyy")}
             </p>
           </div>
-          <Button onClick={() => setShowTaskModal(true)} data-testid="button-add-task" className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Task
-          </Button>
+          <div className="flex items-center gap-2">
+            {settings?.focusSprintEnabled && (
+              <Button
+                variant="outline"
+                onClick={() => setShowFocusSprint(true)}
+                data-testid="button-start-sprint"
+                className="gap-2"
+              >
+                <Zap className="h-4 w-4" />
+                Start 10-min Sprint
+              </Button>
+            )}
+            <Button onClick={() => setShowTaskModal(true)} data-testid="button-add-task" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Task
+            </Button>
+          </div>
         </div>
 
         {todayTasks.length > 0 ? (

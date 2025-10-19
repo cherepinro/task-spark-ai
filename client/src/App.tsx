@@ -23,6 +23,7 @@ import Insights from "@/pages/insights";
 import Templates from "@/pages/templates";
 import Archive from "@/pages/archive";
 import DayPlan from "@/pages/day-plan";
+import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -40,6 +41,7 @@ function Router() {
       <Route path="/day-plan" component={DayPlan} />
       <Route path="/templates" component={Templates} />
       <Route path="/archive" component={Archive} />
+      <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -8,6 +8,7 @@ import {
   Plus,
   FileCode2,
   CalendarClock,
+  Settings as SettingsIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -64,6 +65,11 @@ const navigationItems = [
     title: "Archive",
     url: "/archive",
     icon: Archive,
+  },
+  {
+    title: "Settings",
+    url: "/settings",
+    icon: SettingsIcon,
   },
 ];
 
