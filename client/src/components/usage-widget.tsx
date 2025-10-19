@@ -9,7 +9,8 @@ import {
   ListTodo, 
   FolderKanban,
   CalendarClock,
-  AlertTriangle
+  AlertTriangle,
+  ArrowDownUp
 } from "lucide-react";
 
 interface UsageCheck {
@@ -25,6 +26,7 @@ interface UsageData {
   bulk_import: UsageCheck;
   ai_chat: UsageCheck;
   day_plan: UsageCheck;
+  ai_reorganize: UsageCheck;
   tasks: UsageCheck;
   projects: UsageCheck;
 }
@@ -34,6 +36,7 @@ const FEATURE_ICONS = {
   bulk_import: ListChecks,
   ai_chat: MessageSquare,
   day_plan: CalendarClock,
+  ai_reorganize: ArrowDownUp,
   tasks: ListTodo,
   projects: FolderKanban,
 };
@@ -43,6 +46,7 @@ const FEATURE_COLORS = {
   bulk_import: "text-chart-2",
   ai_chat: "text-chart-4",
   day_plan: "text-chart-1",
+  ai_reorganize: "text-primary",
   tasks: "text-chart-3",
   projects: "text-chart-5",
 };

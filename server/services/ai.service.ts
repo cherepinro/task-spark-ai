@@ -358,31 +358,37 @@ export async function reorganizeTasks(input: ReorganizeInput): Promise<Reorganiz
   const systemPrompt = `You are an AI task organizer using the Eisenhower Matrix (urgent-important framework).
   
 Analyze tasks and recommend actions:
-- **defer**: Not urgent but important - schedule for later
-- **delete**: Neither urgent nor important - can be removed
-- **delegate**: Urgent but less important - could be delegated or deprioritized
+- **defer**: Not urgent but important - schedule for later (move to next week)
+- **delete**: Neither urgent nor important - can be removed/archived
+- **delegate**: Urgent but less important - should be deprioritized or delegated
 
 Consider:
 1. Task priority and status
 2. Due dates (overdue tasks are more urgent)
-3. User's completion ratio (if low, recommend deleting less important tasks)
+3. User's completion ratio (if low < 50%, recommend deleting/deferring more aggressively)
 4. Task descriptions for context
 
-Return ONLY a valid JSON array:
-[
-  {
-    "id": "task-id",
-    "action": "defer|delete|delegate",
-    "reason": "Brief explanation (max 50 chars)"
-  }
-]`;
+Return ONLY a valid JSON object with a suggestions array:
+{
+  "suggestions": [
+    {
+      "id": "task-id",
+      "action": "defer|delete|delegate",
+      "reason": "Brief explanation (max 50 chars)"
+    }
+  ]
+}
+
+IMPORTANT: You must provide at least one suggestion for each task. Every task should be classified into one of the three actions.`;
 
   const userPrompt = `User's 7-day completion ratio: ${(input.completedRatio7d * 100).toFixed(0)}%
 
 Tasks to reorganize:
-${input.tasks.map((t, i) => `${i + 1}. [${t.id}] "${t.title}" (Priority: ${t.priority || 'medium'}, Status: ${t.status || 'todo'}${t.dueDate ? `, Due: ${t.dueDate}` : ''})`).join('\n')}
+${input.tasks.map((t, i) => `${i + 1}. [${t.id}] "${t.title}" (Priority: ${t.priority || 'medium'}, Status: ${t.status || 'todo'}${t.dueDate ? `, Due: ${t.dueDate}` : ''}${t.description ? `, Description: ${t.description}` : ''})`).join('\n')}
 
-Apply Eisenhower Matrix and return reorganization suggestions.`;
+Apply Eisenhower Matrix principles and provide a reorganization suggestion for EACH task.`;
+
+  console.log("[reorganizeTasks] Processing", input.tasks.length, "tasks with", (input.completedRatio7d * 100).toFixed(0), "% completion rate");
 
   // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
   const response = await openai.chat.completions.create({
@@ -396,11 +402,13 @@ Apply Eisenhower Matrix and return reorganization suggestions.`;
   });
 
   const content = response.choices[0]?.message?.content || "{}";
+  console.log("[reorganizeTasks] AI response:", content.substring(0, 200));
   
   try {
     const parsed = JSON.parse(content);
     // Handle both array and object responses
     const suggestions = Array.isArray(parsed) ? parsed : (parsed.suggestions || []);
+    console.log("[reorganizeTasks] Parsed", suggestions.length, "suggestions");
     return suggestions as ReorganizeSuggestion[];
   } catch (error) {
     console.error("[reorganizeTasks] Failed to parse AI response:", content);
