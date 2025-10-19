@@ -86,6 +86,16 @@ export const userStats = pgTable("user_stats", {
   updatedAt: timestamp("updated_at", { mode: "date" }).notNull().default(sql`now()`),
 });
 
+export const pushTokens = pgTable("push_tokens", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().default("default"),
+  token: text("token").notNull(),
+  platform: varchar("platform", { length: 20 }).notNull(), // "android" or "ios"
+  deviceId: text("device_id"),
+  createdAt: timestamp("created_at", { mode: "date" }).notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at", { mode: "date" }).notNull().default(sql`now()`),
+});
+
 // Relations
 export const tasksRelations = relations(tasks, ({ one }) => ({
   project: one(projects, {
@@ -173,6 +183,15 @@ export const insertUserStatsSchema = createInsertSchema(userStats).omit({
   updatedAt: true,
 });
 
+export const insertPushTokenSchema = createInsertSchema(pushTokens).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  token: z.string().min(1, "FCM token is required"),
+  platform: z.enum(["android", "ios"]),
+});
+
 export type Task = typeof tasks.$inferSelect;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type Project = typeof projects.$inferSelect;
@@ -186,3 +205,5 @@ export type UserSettings = typeof userSettings.$inferSelect;
 export type InsertUserSettings = z.infer<typeof insertUserSettingsSchema>;
 export type UserStats = typeof userStats.$inferSelect;
 export type InsertUserStats = z.infer<typeof insertUserStatsSchema>;
+export type PushToken = typeof pushTokens.$inferSelect;
+export type InsertPushToken = z.infer<typeof insertPushTokenSchema>;
