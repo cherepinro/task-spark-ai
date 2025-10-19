@@ -250,7 +250,7 @@ Return ONLY the checklist, no other text.`;
       tokensUsed,
     };
   } catch (error) {
-    console.error("Task decomposition error:", error);
+    logger.serviceError('ai', 'decomposeTask', error, { title });
     throw new Error("Failed to decompose task");
   }
 }
@@ -346,7 +346,7 @@ Generate an optimized daily schedule from 08:00 to 22:00.`;
     const blocks = JSON.parse(content) as TimeBlock[];
     return blocks;
   } catch (error) {
-    console.error("[generateDayPlan] Failed to parse AI response:", content);
+    logger.serviceError('ai', 'generateDayPlan', error, { response: content?.substring(0, 100) });
     throw new Error("Failed to generate day plan");
   }
 }
@@ -396,7 +396,10 @@ ${input.tasks.map((t, i) => `${i + 1}. [${t.id}] "${t.title}" (Priority: ${t.pri
 
 Apply Eisenhower Matrix principles and provide a reorganization suggestion for EACH task.`;
 
-  console.log("[reorganizeTasks] Processing", input.tasks.length, "tasks with", (input.completedRatio7d * 100).toFixed(0), "% completion rate");
+  logger.debug("Reorganizing tasks", { 
+    taskCount: input.tasks.length, 
+    completionRate: `${(input.completedRatio7d * 100).toFixed(0)}%` 
+  });
 
   // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
   const response = await openai.chat.completions.create({
@@ -410,16 +413,16 @@ Apply Eisenhower Matrix principles and provide a reorganization suggestion for E
   });
 
   const content = response.choices[0]?.message?.content || "{}";
-  console.log("[reorganizeTasks] AI response:", content.substring(0, 200));
+  logger.debug("AI reorganize response received", { preview: content.substring(0, 200) });
   
   try {
     const parsed = JSON.parse(content);
     // Handle both array and object responses
     const suggestions = Array.isArray(parsed) ? parsed : (parsed.suggestions || []);
-    console.log("[reorganizeTasks] Parsed", suggestions.length, "suggestions");
+    logger.debug("Parsed reorganization suggestions", { count: suggestions.length });
     return suggestions as ReorganizeSuggestion[];
   } catch (error) {
-    console.error("[reorganizeTasks] Failed to parse AI response:", content);
+    logger.serviceError('ai', 'reorganizeTasks', error, { response: content });
     throw new Error("Failed to reorganize tasks");
   }
 }

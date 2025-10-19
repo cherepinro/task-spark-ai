@@ -24,7 +24,7 @@ import {
   type TimeBlock,
   type ReorganizeSuggestion,
 } from "./services/ai.service";
-import { checkQuota, incrementQuota } from "./services/quota.service";
+// Legacy quota service replaced by usage-tracker.service
 import { checkUsage, incrementUsage, getAllUsage, type FeatureType } from "./services/usage-tracker.service";
 import { cacheService } from "./services/cache.service";
 import { dataCacheService } from "./services/data-cache.service";
@@ -449,15 +449,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Task title is required" });
       }
 
-      // Check quota
+      // Check usage limit
       const userId = "default"; // TODO: Replace with actual user ID when auth is implemented
-      const quotaCheck = await checkQuota(userId);
+      const usageCheck = await checkUsage('ai_decompose', userId);
       
-      if (!quotaCheck.allowed) {
+      if (!usageCheck.allowed) {
         return res.status(429).json({ 
-          error: "Monthly quota exceeded",
-          remainingQuota: quotaCheck.remaining,
-          callCount: quotaCheck.callCount,
+          error: `AI decompose limit reached. You have used ${usageCheck.limit} of ${usageCheck.limit} this month.`,
+          remaining: usageCheck.remaining,
+          limit: usageCheck.limit,
         });
       }
 
@@ -469,7 +469,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({
           ...cached,
           fromCache: true,
-          remainingQuota: quotaCheck.remaining - 1,
+          remainingQuota: usageCheck.remaining - 1,
         });
       }
 
@@ -488,8 +488,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
 
-      // Increment quota
-      await incrementQuota(userId);
+      // Increment usage counter
+      await incrementUsage('ai_decompose', userId);
 
       // Prepare response
       const response = {
@@ -499,7 +499,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           hours: parseFloat(task.hours || "0"),
         })),
         tokensUsed: result.tokensUsed,
-        remainingQuota: quotaCheck.remaining - 1,
+        remainingQuota: usageCheck.remaining - 1,
       };
 
       // Cache the result
