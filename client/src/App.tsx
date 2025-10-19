@@ -24,14 +24,28 @@ import Templates from "@/pages/templates";
 import Archive from "@/pages/archive";
 import DayPlan from "@/pages/day-plan";
 import Settings from "@/pages/settings";
+import Admin from "@/pages/admin";
+import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { InsertTask } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useAuth } from "@/hooks/useAuth";
 
 function Router() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading || !isAuthenticated) {
+    return (
+      <Switch>
+        <Route path="/" component={Landing} />
+        <Route component={Landing} />
+      </Switch>
+    );
+  }
+
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
@@ -43,6 +57,7 @@ function Router() {
       <Route path="/templates" component={Templates} />
       <Route path="/archive" component={Archive} />
       <Route path="/settings" component={Settings} />
+      <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -54,6 +69,7 @@ function AppContent() {
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const { toast } = useToast();
   const filters = useFilters();
+  const { isAuthenticated, isLoading } = useAuth();
 
   const style = {
     "--sidebar-width": "16rem",
@@ -95,6 +111,11 @@ function AppContent() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  // If not authenticated, show router directly (which will show landing page)
+  if (isLoading || !isAuthenticated) {
+    return <Router />;
+  }
 
   return (
     <SidebarProvider style={style as React.CSSProperties}>
