@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import swaggerUi from "swagger-ui-express";
 import { swaggerDocument } from "./swagger";
+import { firebaseService } from "./services/firebase.service";
 
 const app = express();
 app.use(express.json());
@@ -42,6 +43,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialize Firebase for push notifications
+  firebaseService.initialize();
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

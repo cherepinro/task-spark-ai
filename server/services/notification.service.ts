@@ -6,8 +6,8 @@ import type { Task } from '@shared/schema';
 class NotificationService {
   async sendTaskDueNotification(task: Task): Promise<void> {
     try {
-      // Get all push tokens for the user
-      const tokens = await storage.getAllPushTokens(task.userId || 'default');
+      // Get all push tokens for the user (using default since we don't have multi-user auth)
+      const tokens = await storage.getAllPushTokens('default');
       
       if (tokens.length === 0) {
         logger.debug('No push tokens found for user', { taskId: task.id });

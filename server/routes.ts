@@ -7,6 +7,7 @@ import {
   insertProjectSchema,
   insertTaskTemplateSchema,
   insertUserSettingsSchema,
+  insertPushTokenSchema,
   type InsertTask,
   type Task,
 } from "@shared/schema";
@@ -643,6 +644,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("[POST /api/ai/reorganize] Error:", error);
       res.status(500).json({ error: "Failed to reorganize tasks" });
+    }
+  });
+
+  // Push Notification routes
+  app.post("/api/push/token", async (req: Request, res: Response) => {
+    try {
+      const validatedData = insertPushTokenSchema.parse(req.body);
+      const token = await storage.savePushToken(validatedData);
+      
+      logger.info('Push token saved', { platform: token.platform, tokenId: token.id });
+      
+      res.status(201).json({ 
+        success: true, 
+        message: 'Push token registered successfully',
+        tokenId: token.id 
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      logger.apiError('POST /api/push/token', error);
+      res.status(500).json({ error: "Failed to save push token" });
+    }
+  });
+
+  app.delete("/api/push/token", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.body;
+      
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({ error: "Token is required" });
+      }
+
+      const success = await storage.deletePushToken(token);
+      
+      if (!success) {
+        return res.status(404).json({ error: "Token not found" });
+      }
+
+      logger.info('Push token deleted', { token: token.substring(0, 20) + '...' });
+      
+      res.json({ success: true, message: 'Push token deleted successfully' });
+    } catch (error) {
+      logger.apiError('DELETE /api/push/token', error);
+      res.status(500).json({ error: "Failed to delete push token" });
     }
   });
 
