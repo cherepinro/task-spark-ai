@@ -13,6 +13,8 @@ import {
   type InsertUserStats,
   type PushToken,
   type InsertPushToken,
+  type User,
+  type UpsertUser,
   tasks,
   projects,
   aiInsights,
@@ -20,6 +22,7 @@ import {
   userSettings,
   userStats,
   pushTokens,
+  users,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, ilike } from "drizzle-orm";
@@ -32,6 +35,13 @@ export interface TaskFilters {
 }
 
 export interface IStorage {
+  // User operations
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  getAllUsers(): Promise<User[]>;
+  updateUserRole(id: string, isAdmin: boolean, hasAIAccess: boolean): Promise<User | undefined>;
+  updateUserPushNotifications(id: string, enabled: boolean): Promise<User | undefined>;
+  
   // Task operations
   getAllTasks(filters?: TaskFilters): Promise<Task[]>;
   getTask(id: string): Promise<Task | undefined>;
@@ -71,6 +81,49 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // User operations
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users);
+  }
+
+  async updateUserRole(id: string, isAdmin: boolean, hasAIAccess: boolean): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ isAdmin, hasAIAccess, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async updateUserPushNotifications(id: string, enabled: boolean): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ pushNotificationsEnabled: enabled, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
   // Task operations
   async getAllTasks(filters?: TaskFilters): Promise<Task[]> {
     const conditions = [];

@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 import {
   insertTaskSchema,
   updateTaskSchema,
@@ -34,8 +35,89 @@ import md5 from "md5";
 import { calculateNextOccurrence, shouldCreateNextOccurrence } from "./utils/recurrence";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Auth middleware
+  await setupAuth(app);
+
+  // Auth routes
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(user);
+    } catch (error) {
+      logger.apiError('GET /api/auth/user', error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Admin routes
+  app.get('/api/admin/users', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const currentUser = await storage.getUser(userId);
+      
+      if (!currentUser?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      logger.apiError('GET /api/admin/users', error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.patch('/api/admin/users/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const currentUser = await storage.getUser(userId);
+      
+      if (!currentUser?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const { isAdmin, hasAIAccess } = req.body;
+      const user = await storage.updateUserRole(req.params.id, isAdmin, hasAIAccess);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      logger.info('User role updated', { userId: user.id, isAdmin, hasAIAccess });
+      res.json(user);
+    } catch (error) {
+      logger.apiError('PATCH /api/admin/users/:id', error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  app.patch('/api/user/push-notifications', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { enabled } = req.body;
+      
+      const user = await storage.updateUserPushNotifications(userId, enabled);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      logger.info('Push notifications updated', { userId, enabled });
+      res.json(user);
+    } catch (error) {
+      logger.apiError('PATCH /api/user/push-notifications', error);
+      res.status(500).json({ message: "Failed to update push notification settings" });
+    }
+  });
+
   // Task routes
-  app.get("/api/tasks", async (req: Request, res: Response) => {
+  app.get("/api/tasks", isAuthenticated, async (req: any, res: Response) => {
     try {
       const filters = {
         search: req.query.search as string | undefined,
