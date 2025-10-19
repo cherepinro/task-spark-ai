@@ -247,7 +247,7 @@ Return ONLY the checklist, no other text.`;
   }
 }
 
-function parseMarkdownChecklist(markdown: string): DecomposedTask[] {
+export function parseMarkdownChecklist(markdown: string): DecomposedTask[] {
   const lines = markdown.trim().split('\n');
   const tasks: DecomposedTask[] = [];
 

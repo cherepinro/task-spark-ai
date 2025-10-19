@@ -16,6 +16,7 @@ import {
   generateProductivityInsight,
   chatWithAI,
   decomposeTask,
+  parseMarkdownChecklist,
   type ChatMessage,
 } from "./services/ai.service";
 import { checkQuota, incrementQuota } from "./services/quota.service";
@@ -80,6 +81,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("[POST /api/tasks] Error creating task:", error);
       res.status(500).json({ error: "Failed to create task" });
+    }
+  });
+
+  app.post("/api/tasks/bulk-import", async (req: Request, res: Response) => {
+    try {
+      const { checklist, priority = "medium", projectId } = req.body;
+      
+      if (!checklist || typeof checklist !== "string") {
+        return res.status(400).json({ error: "Checklist text is required" });
+      }
+
+      // Parse the markdown checklist
+      const parsedTasks = parseMarkdownChecklist(checklist);
+      
+      if (parsedTasks.length === 0) {
+        return res.status(400).json({ error: "No valid tasks found in checklist" });
+      }
+
+      // Create all tasks
+      const createdTasks = await Promise.all(
+        parsedTasks.map(async (item) => {
+          return await storage.createTask({
+            title: item.title,
+            priority: priority as "low" | "medium" | "high",
+            status: "todo",
+            hours: item.hours.toString(),
+            projectId: projectId || undefined,
+          });
+        })
+      );
+
+      // Invalidate tasks cache
+      dataCacheService.invalidateTasks();
+
+      res.status(201).json({
+        count: createdTasks.length,
+        tasks: createdTasks,
+      });
+    } catch (error) {
+      console.error("[POST /api/tasks/bulk-import] Error:", error);
+      res.status(500).json({ error: "Failed to import tasks" });
     }
   });
 
