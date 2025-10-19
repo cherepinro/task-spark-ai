@@ -487,23 +487,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Fetch full task details from database
-      const taskDetails = await Promise.all(
-        tasks.map(async (taskId: string) => {
-          const task = await storage.getTaskById(taskId);
-          return task;
-        })
-      );
-
-      const validTasks = taskDetails.filter(t => t !== null);
+      const allTasks = await storage.getAllTasks();
+      const taskMap = new Map(allTasks.map(t => [t.id, t]));
+      
+      const validTasks = tasks
+        .map((taskId: string) => taskMap.get(taskId))
+        .filter((t): t is Task => t !== undefined);
 
       // Generate day plan with AI
       const timeBlocks = await generateDayPlan({
         tasks: validTasks.map(t => ({
-          id: t!.id,
-          title: t!.title,
-          description: t!.description || undefined,
-          priority: t!.priority,
-          hours: t!.hours || undefined,
+          id: t.id,
+          title: t.title,
+          description: t.description || undefined,
+          priority: t.priority,
+          hours: t.hours || undefined,
         })),
         habits: habits || [],
         busySlots: busySlots || [],

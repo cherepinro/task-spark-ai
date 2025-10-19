@@ -7,6 +7,7 @@ import {
   Archive,
   Plus,
   FileCode2,
+  CalendarClock,
 } from "lucide-react";
 import {
   Sidebar,
@@ -48,6 +49,11 @@ const navigationItems = [
     title: "AI Insights",
     url: "/insights",
     icon: Sparkles,
+  },
+  {
+    title: "Day Planner",
+    url: "/day-plan",
+    icon: CalendarClock,
   },
   {
     title: "Templates",

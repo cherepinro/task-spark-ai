@@ -8,6 +8,7 @@ import {
   MessageSquare, 
   ListTodo, 
   FolderKanban,
+  CalendarClock,
   AlertTriangle
 } from "lucide-react";
 
@@ -23,6 +24,7 @@ interface UsageData {
   ai_decompose: UsageCheck;
   bulk_import: UsageCheck;
   ai_chat: UsageCheck;
+  day_plan: UsageCheck;
   tasks: UsageCheck;
   projects: UsageCheck;
 }
@@ -31,6 +33,7 @@ const FEATURE_ICONS = {
   ai_decompose: Zap,
   bulk_import: ListChecks,
   ai_chat: MessageSquare,
+  day_plan: CalendarClock,
   tasks: ListTodo,
   projects: FolderKanban,
 };
@@ -39,6 +42,7 @@ const FEATURE_COLORS = {
   ai_decompose: "text-primary",
   bulk_import: "text-chart-2",
   ai_chat: "text-chart-4",
+  day_plan: "text-chart-1",
   tasks: "text-chart-3",
   projects: "text-chart-5",
 };
