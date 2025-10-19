@@ -328,7 +328,7 @@ Generate an optimized daily schedule from 08:00 to 22:00.`;
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
     ],
-    temperature: 0.7,
+    // GPT-5 only supports default temperature of 1, cannot customize
     max_completion_tokens: 2000,
   });
 

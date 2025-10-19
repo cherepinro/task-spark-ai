@@ -62,7 +62,7 @@ export const quotaUsage = pgTable("quota_usage", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().default("default"),
   featureType: varchar("feature_type", { length: 50 }).notNull().default("ai_decompose"),
-  month: varchar("month", { length: 7 }).notNull(),
+  month: varchar("month", { length: 10 }).notNull(), // Supports both YYYY-MM (7) and YYYY-MM-DD (10)
   callCount: integer("call_count").notNull().default(0),
   createdAt: timestamp("created_at", { mode: "date" }).notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at", { mode: "date" }).notNull().default(sql`now()`),
