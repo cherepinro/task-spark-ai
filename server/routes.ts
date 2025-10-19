@@ -198,10 +198,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(task);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        console.error("[POST /api/tasks] Validation error:", error.errors);
+        logger.apiError('POST /api/tasks - Validation error', error);
         return res.status(400).json({ error: error.errors });
       }
-      console.error("[POST /api/tasks] Error creating task:", error);
+      logger.apiError('POST /api/tasks', error);
       res.status(500).json({ error: "Failed to create task" });
     }
   });
@@ -269,7 +269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
     } catch (error) {
-      console.error("[POST /api/tasks/bulk-import] Error:", error);
+      logger.apiError('POST /api/tasks/bulk-import', error);
       res.status(500).json({ error: "Failed to import tasks" });
     }
   });
@@ -283,7 +283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Handle recurring task: create next occurrence if task is completed
-      console.log("[Recurrence] Checking task:", {
+      logger.debug("Recurrence check:", {
         id: task.id,
         title: task.title,
         isRecurring: task.isRecurring,
@@ -294,7 +294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (shouldCreateNextOccurrence(task)) {
         const nextDate = calculateNextOccurrence(task);
-        console.log("[Recurrence] Next occurrence date:", nextDate);
+        logger.debug("Next recurrence date", { nextDate });
         
         if (nextDate) {
           const nextTask: InsertTask = {
@@ -313,9 +313,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isAISuggested: task.isAISuggested || undefined,
             aiCategory: task.aiCategory || undefined,
           };
-          console.log("[Recurrence] Creating next task:", nextTask);
+          logger.debug("Creating next recurrence task", { nextTask });
           const createdTask = await storage.createTask(nextTask);
-          console.log("[Recurrence] Created task:", createdTask.id);
+          logger.debug("Created recurrence task", { taskId: createdTask.id });
         }
       }
 
@@ -388,7 +388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
-      console.error("[PATCH /api/tasks/bulk] Error:", error);
+      logger.apiError('PATCH /api/tasks/bulk', error);
       res.status(500).json({ error: error instanceof Error ? error.message : "Failed to update tasks" });
     }
   });
@@ -635,7 +635,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(response);
     } catch (error) {
-      console.error("Task decomposition error:", error);
+      logger.apiError('POST /api/ai/decompose', error);
       res.status(500).json({ error: "Failed to decompose task" });
     }
   });
@@ -768,7 +768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
     } catch (error) {
-      console.error("[POST /api/ai/reorganize] Error:", error);
+      logger.apiError('POST /api/ai/reorganize', error);
       res.status(500).json({ error: "Failed to reorganize tasks" });
     }
   });
@@ -1108,7 +1108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const usage = await getAllUsage();
       res.json(usage);
     } catch (error) {
-      console.error("[GET /api/usage] Error:", error);
+      logger.apiError('GET /api/usage', error);
       res.status(500).json({ error: "Failed to fetch usage data" });
     }
   });
