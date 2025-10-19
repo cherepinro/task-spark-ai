@@ -8,8 +8,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Calendar, MoreVertical, Sparkles, FolderKanban, Repeat } from "lucide-react";
+import { Calendar, MoreVertical, Sparkles, FolderKanban, Repeat, Zap, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -19,6 +20,7 @@ interface TaskCardProps {
   onEdit?: (task: Task) => void;
   onDelete?: (taskId: string) => void;
   onSaveAsTemplate?: (task: Task) => void;
+  onBreakdown?: (task: Task) => void;
 }
 
 const priorityColors = {
@@ -39,6 +41,7 @@ export function TaskCard({
   onEdit,
   onDelete,
   onSaveAsTemplate,
+  onBreakdown,
 }: TaskCardProps) {
   const isCompleted = task.status === "completed";
 
@@ -95,6 +98,15 @@ export function TaskCard({
                   Edit
                 </DropdownMenuItem>
                 <DropdownMenuItem
+                  onClick={() => onBreakdown?.(task)}
+                  data-testid={`button-breakdown-task-${task.id}`}
+                  disabled={isCompleted}
+                >
+                  <Zap className="h-4 w-4 mr-2 text-primary" />
+                  Breakdown Task
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
                   onClick={() => onSaveAsTemplate?.(task)}
                   data-testid={`button-save-as-template-${task.id}`}
                 >
@@ -112,6 +124,16 @@ export function TaskCard({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {task.hours && (
+              <Badge
+                variant="outline"
+                className="gap-1 border-primary/30 bg-primary/5 text-primary text-xs"
+                data-testid={`badge-hours-${task.id}`}
+              >
+                <Clock className="h-3 w-3" />
+                {task.hours}h
+              </Badge>
+            )}
             {task.isRecurring && (
               <Badge
                 variant="outline"
