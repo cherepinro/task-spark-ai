@@ -395,7 +395,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Project routes
-  app.get("/api/projects", async (_req: Request, res: Response) => {
+  app.get("/api/projects", isAuthenticated, async (_req: Request, res: Response) => {
     try {
       // Try cache first
       const cached = dataCacheService.getProjects();
@@ -414,7 +414,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/projects", async (req: Request, res: Response) => {
+  app.post("/api/projects", isAuthenticated, async (req: Request, res: Response) => {
     try {
       // Check project limit
       const projectUsage = await checkUsage('projects');
@@ -441,7 +441,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/projects/:id", async (req: Request, res: Response) => {
+  app.delete("/api/projects/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const deleted = await storage.deleteProject(req.params.id);
       if (!deleted) {
