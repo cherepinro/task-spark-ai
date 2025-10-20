@@ -9,10 +9,13 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { UserSettings, User } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 export default function Settings() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const { data: settings, isLoading } = useQuery<UserSettings>({
     queryKey: ["/api/settings"],
@@ -60,7 +63,7 @@ export default function Settings() {
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <SettingsIcon className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-semibold">Settings</h1>
+            <h1 className="text-2xl font-semibold">{t('settings.title')}</h1>
           </div>
           <p className="text-muted-foreground">
             Manage your TaskSpark AI preferences and features.
@@ -68,12 +71,24 @@ export default function Settings() {
         </div>
 
         <div className="space-y-4">
+          {/* Language Settings */}
+          <Card data-testid="card-language-settings">
+            <CardHeader>
+              <CardTitle>{t('settings.language')}</CardTitle>
+              <CardDescription>
+                Choose your preferred language for the application
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LanguageSwitcher />
+            </CardContent>
+          </Card>
           {/* Push Notifications Settings */}
           <Card data-testid="card-push-notifications-settings">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Bell className="h-5 w-5 text-primary" />
-                Notifications
+                {t('settings.notifications')}
               </CardTitle>
               <CardDescription>
                 Control task reminders and push notifications on your devices
@@ -83,7 +98,7 @@ export default function Settings() {
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <Label htmlFor="push-notifications-enabled" className="text-base">
-                    Enable Push Notifications
+                    {t('settings.pushNotifications')}
                   </Label>
                   <p className="text-sm text-muted-foreground mt-1">
                     Receive reminders for tasks due soon and high-priority items
@@ -106,7 +121,7 @@ export default function Settings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Zap className="h-5 w-5 text-primary" />
-                Focus Sprint
+                {t('focusSprint.title')}
               </CardTitle>
               <CardDescription>
                 Neuro-inclusive 10-minute focus sessions with stim sounds and progress tracking
@@ -116,7 +131,7 @@ export default function Settings() {
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <Label htmlFor="focus-sprint-enabled" className="text-base">
-                    Enable Focus Sprint
+                    {t('settings.enableSprint')}
                   </Label>
                   <p className="text-sm text-muted-foreground mt-1">
                     Show "Start 10-min sprint" button on Today page

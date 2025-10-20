@@ -33,6 +33,7 @@ import type { InsertTask } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAuth } from "@/hooks/useAuth";
+import "@/i18n/config";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();

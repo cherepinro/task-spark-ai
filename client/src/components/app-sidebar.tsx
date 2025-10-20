@@ -27,50 +27,51 @@ import {
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 
 const navigationItems = [
   {
-    title: "Dashboard",
+    key: "dashboard",
     url: "/",
     icon: LayoutDashboard,
   },
   {
-    title: "Today",
+    key: "today",
     url: "/today",
     icon: ListTodo,
   },
   {
-    title: "Upcoming",
+    key: "upcoming",
     url: "/upcoming",
     icon: Calendar,
   },
   {
-    title: "Projects",
+    key: "projects",
     url: "/projects",
     icon: FolderKanban,
   },
   {
-    title: "AI Insights",
+    key: "insights",
     url: "/insights",
     icon: Sparkles,
   },
   {
-    title: "Day Planner",
+    key: "dayPlanner",
     url: "/day-plan",
     icon: CalendarClock,
   },
   {
-    title: "Templates",
+    key: "templates",
     url: "/templates",
     icon: FileCode2,
   },
   {
-    title: "Archive",
+    key: "archive",
     url: "/archive",
     icon: Archive,
   },
   {
-    title: "Settings",
+    key: "settings",
     url: "/settings",
     icon: SettingsIcon,
   },
@@ -83,6 +84,7 @@ interface AppSidebarProps {
 export function AppSidebar({ onQuickAdd }: AppSidebarProps) {
   const [location] = useLocation();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   return (
     <Sidebar>
@@ -92,8 +94,8 @@ export function AppSidebar({ onQuickAdd }: AppSidebarProps) {
             <Sparkles className="h-4 w-4 text-primary-foreground" />
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-semibold">TaskSpark AI</span>
-            <span className="text-xs text-muted-foreground">Smart Tasks</span>
+            <span className="text-sm font-semibold">{t('app.name')}</span>
+            <span className="text-xs text-muted-foreground">{t('app.tagline')}</span>
           </div>
         </div>
       </SidebarHeader>
@@ -107,24 +109,24 @@ export function AppSidebar({ onQuickAdd }: AppSidebarProps) {
               data-testid="button-quick-add-task"
             >
               <Plus className="h-4 w-4" />
-              Quick Add Task
+              {t('tasks.quickAdd')}
             </Button>
           </div>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('nav.dashboard')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.key}>
                   <SidebarMenuButton
                     asChild
                     isActive={location === item.url}
-                    data-testid={`link-sidebar-${item.title.toLowerCase().replace(" ", "-")}`}
+                    data-testid={`link-sidebar-${item.key}`}
                   >
                     <Link href={item.url}>
                       <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <span>{t(`nav.${item.key}`)}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -138,7 +140,7 @@ export function AppSidebar({ onQuickAdd }: AppSidebarProps) {
                   >
                     <Link href="/admin">
                       <Shield className="h-4 w-4" />
-                      <span>Admin</span>
+                      <span>{t('nav.admin')}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -182,7 +184,7 @@ export function AppSidebar({ onQuickAdd }: AppSidebarProps) {
           data-testid="button-logout"
         >
           <LogOut className="h-4 w-4" />
-          Log Out
+          {t('auth.logOut')}
         </Button>
         <div className="rounded-lg bg-sidebar-accent p-3">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
