@@ -39,7 +39,7 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByGoogleId(googleId: string): Promise<User | undefined>;
-  createUser(user: Partial<UpsertUser> & { email: string; passwordHash: string }): Promise<User>;
+  createUser(user: Partial<UpsertUser> & { email: string; passwordHash?: string | null }): Promise<User>;
   createGoogleUser(user: { email: string; googleId: string; firstName?: string; lastName?: string; profileImageUrl?: string | null }): Promise<User>;
   linkGoogleAccount(userId: string, googleId: string, profileImageUrl?: string | null): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
@@ -103,7 +103,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(userData: Partial<UpsertUser> & { email: string; passwordHash: string }): Promise<User> {
+  async createUser(userData: Partial<UpsertUser> & { email: string; passwordHash?: string | null }): Promise<User> {
     const [user] = await db
       .insert(users)
       .values(userData)

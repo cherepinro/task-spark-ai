@@ -148,7 +148,7 @@ export async function setupAuth(app: Express) {
 
         user = await storage.createUser({
           email,
-          passwordHash: null, // OAuth users don't have passwords
+          passwordHash: undefined, // OAuth users don't have passwords
           firstName: firstName || undefined,
           lastName,
           googleId: uid,
