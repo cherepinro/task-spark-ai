@@ -7,12 +7,21 @@ import { logger } from "../services/logger.service";
  * Configure Passport with Google OAuth 2.0 strategy
  */
 export function configurePassport() {
+  // Check if Google OAuth credentials are configured
+  const hasGoogleCredentials = process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET;
+  
+  if (!hasGoogleCredentials) {
+    logger.warn("Google OAuth credentials not configured. Google sign-in will not be available.");
+    logger.info("To enable Google OAuth, set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables.");
+    return;
+  }
+
   // Google OAuth Strategy
   passport.use(
     new GoogleStrategy(
       {
-        clientID: process.env.GOOGLE_CLIENT_ID || "",
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+        clientID: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
         callbackURL: "/auth/google/callback",
         scope: ["profile", "email"],
       },

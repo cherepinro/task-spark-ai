@@ -129,25 +129,36 @@ export async function setupAuth(app: Express) {
     });
   });
 
-  // Google OAuth routes
-  app.get(
-    "/auth/google",
-    passport.authenticate("google", { scope: ["profile", "email"] })
-  );
+  // Google OAuth routes (only if credentials are configured)
+  const hasGoogleCredentials = process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET;
+  
+  if (hasGoogleCredentials) {
+    app.get(
+      "/auth/google",
+      passport.authenticate("google", { scope: ["profile", "email"] })
+    );
 
-  app.get(
-    "/auth/google/callback",
-    passport.authenticate("google", { failureRedirect: "/login" }),
-    (req, res) => {
-      // Successful authentication
-      // Save user ID in session
-      if (req.user && typeof req.user === 'object' && 'id' in req.user) {
-        req.session.userId = (req.user as any).id;
+    app.get(
+      "/auth/google/callback",
+      passport.authenticate("google", { failureRedirect: "/login" }),
+      (req, res) => {
+        // Successful authentication
+        // Save user ID in session
+        if (req.user && typeof req.user === 'object' && 'id' in req.user) {
+          req.session.userId = (req.user as any).id;
+        }
+        // Redirect to dashboard
+        res.redirect("/");
       }
-      // Redirect to dashboard
-      res.redirect("/");
-    }
-  );
+    );
+  } else {
+    // Fallback route if Google OAuth is not configured
+    app.get("/auth/google", (req, res) => {
+      res.status(503).json({ 
+        message: "Google OAuth is not configured. Please contact the administrator to set up Google sign-in." 
+      });
+    });
+  }
 
   // Get current authenticated user endpoint
   app.get("/api/auth/user", async (req, res) => {
