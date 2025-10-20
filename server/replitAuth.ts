@@ -8,6 +8,7 @@ import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 import { logger } from "./services/logger.service";
 import crypto from "crypto";
+import type { AuthenticatedRequest, UserClaims } from './types';
 
 if (!process.env.REPLIT_DOMAINS) {
   throw new Error("Environment variable REPLIT_DOMAINS not provided");
@@ -47,22 +48,22 @@ export function getSession() {
 }
 
 function updateUserSession(
-  user: any,
+  user: Record<string, any>,
   tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers
 ) {
-  user.claims = tokens.claims();
+  user.claims = tokens.claims() as unknown as UserClaims;
   user.access_token = tokens.access_token;
   user.refresh_token = tokens.refresh_token;
   user.expires_at = user.claims?.exp;
 }
 
-async function upsertUser(claims: any) {
+async function upsertUser(claims: Record<string, any>) {
   await storage.upsertUser({
-    id: claims["sub"],
-    email: claims["email"],
-    firstName: claims["first_name"],
-    lastName: claims["last_name"],
-    profileImageUrl: claims["profile_image_url"],
+    id: claims.sub || claims["sub"],
+    email: claims.email || claims["email"],
+    firstName: claims.first_name || claims["first_name"],
+    lastName: claims.last_name || claims["last_name"],
+    profileImageUrl: claims.picture || claims["profile_image_url"] || claims.profile_image_url,
   });
 }
 
@@ -80,7 +81,10 @@ export async function setupAuth(app: Express) {
   ) => {
     const user = {};
     updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
+    const claims = tokens.claims();
+    if (claims) {
+      await upsertUser(claims as Record<string, any>);
+    }
     verified(null, user);
   };
 
@@ -158,9 +162,9 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 };
 
 // Middleware to check if user has AI access
-export const requiresAIAccess: RequestHandler = async (req: any, res, next) => {
+export const requiresAIAccess: RequestHandler = async (req, res, next) => {
   try {
-    const userId = req.user?.claims?.sub;
+    const userId = (req.user as any)?.claims?.sub;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
