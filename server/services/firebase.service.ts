@@ -160,6 +160,85 @@ class FirebaseService {
   isReady(): boolean {
     return isInitialized;
   }
+
+  /**
+   * Verify a Firebase ID token
+   * @param idToken Firebase ID token from client
+   * @returns Decoded token with user info or null if invalid
+   */
+  async verifyIdToken(idToken: string): Promise<admin.auth.DecodedIdToken | null> {
+    if (!isInitialized) {
+      logger.warn('Firebase not initialized. Cannot verify ID token.');
+      return null;
+    }
+
+    try {
+      const decodedToken = await admin.auth().verifyIdToken(idToken);
+      return decodedToken;
+    } catch (error) {
+      logger.error('Failed to verify Firebase ID token', error);
+      return null;
+    }
+  }
+
+  /**
+   * Create a custom token for a user (for email/password auth)
+   * @param uid User ID
+   * @returns Custom token
+   */
+  async createCustomToken(uid: string): Promise<string | null> {
+    if (!isInitialized) {
+      logger.warn('Firebase not initialized. Cannot create custom token.');
+      return null;
+    }
+
+    try {
+      const customToken = await admin.auth().createCustomToken(uid);
+      return customToken;
+    } catch (error) {
+      logger.error('Failed to create custom token', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get Firebase user by email
+   */
+  async getUserByEmail(email: string): Promise<admin.auth.UserRecord | null> {
+    if (!isInitialized) {
+      return null;
+    }
+
+    try {
+      const userRecord = await admin.auth().getUserByEmail(email);
+      return userRecord;
+    } catch (error) {
+      // User doesn't exist in Firebase yet
+      return null;
+    }
+  }
+
+  /**
+   * Create a Firebase user
+   */
+  async createUser(email: string, password?: string, displayName?: string): Promise<admin.auth.UserRecord | null> {
+    if (!isInitialized) {
+      return null;
+    }
+
+    try {
+      const userRecord = await admin.auth().createUser({
+        email,
+        password,
+        displayName,
+        emailVerified: false,
+      });
+      return userRecord;
+    } catch (error) {
+      logger.error('Failed to create Firebase user', error);
+      return null;
+    }
+  }
 }
 
 export const firebaseService = new FirebaseService();
