@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated, requiresAIAccess } from "./replitAuth";
+import { setupAuth, isAuthenticated, requiresAIAccess } from "./auth";
 import type { AuthenticatedRequest } from "./types";
 import {
   insertTaskSchema,
@@ -42,7 +42,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const user = await storage.getUser(userId);
       
       if (!user) {
@@ -58,7 +58,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/auth/user', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const { pushNotificationsEnabled } = req.body;
 
       if (typeof pushNotificationsEnabled !== 'boolean') {
@@ -81,7 +81,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin routes
   app.get('/api/admin/users', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const currentUser = await storage.getUser(userId);
       
       if (!currentUser?.isAdmin) {
@@ -98,7 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/admin/users/:id', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const currentUser = await storage.getUser(userId);
       
       if (!currentUser?.isAdmin) {
@@ -122,7 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/user/push-notifications', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const { enabled } = req.body;
       
       const user = await storage.updateUserPushNotifications(userId, enabled);
@@ -540,7 +540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Message is required" });
       }
 
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const usageCheck = await checkUsage('ai_chat', userId);
       
       if (!usageCheck.allowed) {
@@ -576,7 +576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get authenticated user ID
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const usageCheck = await checkUsage('ai_decompose', userId);
       
       if (!usageCheck.allowed) {
@@ -644,7 +644,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Day Plan endpoint
   app.post("/api/ai/day-plan", isAuthenticated, requiresAIAccess, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       
       // Check usage limit
       const usageCheck = await checkUsage('day_plan', userId);
@@ -702,7 +702,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Reorganize (Eisenhower Matrix) endpoint
   app.post("/api/ai/reorganize", isAuthenticated, requiresAIAccess, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       
       // Check usage limit (once per day)
       const usageCheck = await checkUsage('ai_reorganize', userId);
@@ -1137,7 +1137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User settings routes
   app.get("/api/settings", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const settings = await storage.getUserSettings(userId);
       
       if (!settings) {
@@ -1157,7 +1157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/settings", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const validatedSettings = insertUserSettingsSchema.partial().parse(req.body);
       const settings = await storage.updateUserSettings(validatedSettings, userId);
       res.json(settings);
@@ -1173,7 +1173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User stats routes
   app.get("/api/stats", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const stats = await storage.getUserStats(userId);
       
       if (!stats) {
@@ -1190,7 +1190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/stats/sprint-complete", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user!.id;
       const stats = await storage.incrementSprintCount(userId);
       res.json(stats);
     } catch (error) {

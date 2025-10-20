@@ -1,30 +1,25 @@
 import { Request } from 'express';
 
 /**
- * User claims from OIDC token
+ * Authenticated user data
  */
-export interface UserClaims {
-  sub: string;      // Subject (user ID)
+export interface AuthenticatedUser {
+  id: string;
   email: string;
-  name?: string;
-  picture?: string; // Avatar URL
-  first_name?: string;
-  last_name?: string;
-  profile_image_url?: string;
-  iss?: string;     // Issuer
-  aud?: string;     // Audience
-  exp?: number;     // Expiration
-  iat?: number;     // Issued at
+  isAdmin: boolean;
+  hasAIAccess: boolean;
 }
 
 /**
- * Authenticated request with user claims from Replit Auth
+ * Authenticated request with user from session
  */
 export interface AuthenticatedRequest extends Request {
-  user?: {
-    claims?: UserClaims;
-    access_token?: string;
-    refresh_token?: string;
-    expires_at?: number;
-  };
+  user?: AuthenticatedUser;
+}
+
+/**
+ * Legacy type for backward compatibility (deprecated)
+ */
+export interface UserClaims {
+  sub: string;
 }
