@@ -129,69 +129,75 @@ function AppContent() {
 
   // If not authenticated, show router directly (which handles login/signup pages)
   if (!isAuthenticated) {
-    return <Router />;
+    return (
+      <>
+        <Router />
+        <Toaster />
+      </>
+    );
   }
 
   return (
-    <SidebarProvider style={style as React.CSSProperties}>
-      <div className="flex h-screen w-full">
-        <AppSidebar onQuickAdd={() => setShowTaskModal(true)} />
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <header className="flex items-center justify-between gap-4 px-4 py-3 border-b">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger data-testid="button-sidebar-toggle" />
-              <div className="text-xs text-muted-foreground hidden lg:block">
-                Press <kbd className="px-1.5 py-0.5 text-xs rounded bg-muted border">⌘K</kbd> for commands
+    <>
+      <SidebarProvider style={style as React.CSSProperties}>
+        <div className="flex h-screen w-full">
+          <AppSidebar onQuickAdd={() => setShowTaskModal(true)} />
+          <div className="flex flex-col flex-1 overflow-hidden">
+            <header className="flex items-center justify-between gap-4 px-4 py-3 border-b">
+              <div className="flex items-center gap-2">
+                <SidebarTrigger data-testid="button-sidebar-toggle" />
+                <div className="text-xs text-muted-foreground hidden lg:block">
+                  Press <kbd className="px-1.5 py-0.5 text-xs rounded bg-muted border">⌘K</kbd> for commands
+                </div>
               </div>
-            </div>
 
-            <TaskSearchFilter
-              search={filters.search}
-              onSearchChange={filters.setSearch}
-              priority={filters.priority}
-              onPriorityChange={filters.setPriority}
-              status={filters.status}
-              onStatusChange={filters.setStatus}
-              projectId={filters.projectId}
-              onProjectIdChange={filters.setProjectId}
-              onClearFilters={filters.clearFilters}
-            />
+              <TaskSearchFilter
+                search={filters.search}
+                onSearchChange={filters.setSearch}
+                priority={filters.priority}
+                onPriorityChange={filters.setPriority}
+                status={filters.status}
+                onStatusChange={filters.setStatus}
+                projectId={filters.projectId}
+                onProjectIdChange={filters.setProjectId}
+                onClearFilters={filters.clearFilters}
+              />
 
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowAIChat(true)}
-                data-testid="button-open-ai-chat"
-                className="rounded-lg"
-              >
-                <Sparkles className="h-5 w-5 text-primary" />
-                <span className="sr-only">Open AI Chat</span>
-              </Button>
-              <ThemeToggle />
-            </div>
-          </header>
-          <main className="flex-1 overflow-auto">
-            <Router />
-          </main>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowAIChat(true)}
+                  data-testid="button-open-ai-chat"
+                  className="rounded-lg"
+                >
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  <span className="sr-only">Open AI Chat</span>
+                </Button>
+                <ThemeToggle />
+              </div>
+            </header>
+            <main className="flex-1 overflow-auto">
+              <Router />
+            </main>
+          </div>
         </div>
-      </div>
 
-      <TaskCreationModal
-        open={showTaskModal}
-        onOpenChange={setShowTaskModal}
-        onSubmit={handleCreateTask}
-      />
+        <TaskCreationModal
+          open={showTaskModal}
+          onOpenChange={setShowTaskModal}
+          onSubmit={handleCreateTask}
+        />
 
-      <AIChatPanel open={showAIChat} onOpenChange={setShowAIChat} />
+        <AIChatPanel open={showAIChat} onOpenChange={setShowAIChat} />
 
-      <CommandPalette
-        open={showCommandPalette}
-        onOpenChange={setShowCommandPalette}
-      />
-
+        <CommandPalette
+          open={showCommandPalette}
+          onOpenChange={setShowCommandPalette}
+        />
+      </SidebarProvider>
       <Toaster />
-    </SidebarProvider>
+    </>
   );
 }
 
