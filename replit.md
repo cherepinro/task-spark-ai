@@ -100,26 +100,28 @@ TaskSpark AI implements **Firebase Cloud Messaging (FCM)** push notifications fo
 The notification service includes automatic detection and cleanup of invalid tokens, multicast messaging for sending to multiple devices, and integration with the task management system to send timely reminders.
 
 ## User Authentication & Authorization (PROMPT-14 + PROMPT-15)
-TaskSpark AI implements **dual authentication**: custom email/password authentication with bcrypt and **Google OAuth 2.0**, providing flexible sign-in options:
+TaskSpark AI implements **dual authentication**: custom email/password authentication with bcrypt and **Firebase Google OAuth**, providing flexible sign-in options:
 
 - **Authentication System**:
-  - `server/auth.ts` - Authentication routes (email/password login, signup, logout, Google OAuth)
-  - `server/config/passport.ts` - Passport.js configuration for Google OAuth strategy
+  - `server/auth.ts` - Authentication routes (email/password login, signup, logout, Firebase OAuth)
   - `server/services/auth.service.ts` - Password hashing with bcrypt (10 salt rounds)
-  - Session management using PostgreSQL with `connect-pg-simple` and Passport.js
+  - `server/services/firebase.service.ts` - Firebase Admin SDK for token verification
+  - Session management using PostgreSQL with `connect-pg-simple`
   - `isAuthenticated` middleware for protecting routes
   - `requiresAIAccess` middleware for role-based access control
   - Auto-creates admin account on first run (`admin@taskspark.local`)
-  - Google OAuth gracefully disabled if credentials not configured (app runs with email/password only)
 
-- **Google OAuth Integration**:
-  - Passport.js with `passport-google-oauth20` strategy
-  - OAuth routes: `GET /auth/google`, `GET /auth/google/callback`
+- **Firebase Google OAuth Integration**:
+  - Client-side Firebase Authentication with `signInWithPopup`
+  - Backend verifies Firebase ID tokens using Firebase Admin SDK
+  - Firebase endpoint: `POST /api/auth/firebase` accepts Firebase ID token
   - Automatic user creation or linking when signing in with Google
   - Links Google account to existing email if email matches
   - Stores Google profile image URL in user profile
-  - Environment variables: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (optional)
+  - Environment variables (frontend): `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`
+  - Environment variable (backend): `FIREBASE_SERVICE_ACCOUNT_JSON` (shared with push notifications)
   - Login page includes "Sign in with Google" button with Google logo
+  - Setup guide: See `FIREBASE_AUTH_SETUP.md`
 
 - **Database Schema**:
   - `users` table - Stores user profiles with role fields and OAuth support:
@@ -168,8 +170,7 @@ TaskSpark AI implements **dual authentication**: custom email/password authentic
 - **API Endpoints**:
   - `POST /api/signup` - Create new user account (email, password, firstName?, lastName?)
   - `POST /api/login` - Authenticate user (email, password)
-  - `GET /auth/google` - Redirect to Google OAuth consent screen
-  - `GET /auth/google/callback` - Google OAuth callback (creates/links user, redirects to dashboard)
+  - `POST /api/auth/firebase` - Authenticate with Firebase ID token (Google OAuth)
   - `POST /api/logout` - End user session
   - `GET /api/auth/user` - Get current user profile
   - `PATCH /api/auth/user` - Update user preferences (push notifications)
@@ -197,7 +198,7 @@ TaskSpark AI implements **dual authentication**: custom email/password authentic
   - Automatic admin password generation on first run
   - OAuth users don't have passwords (password_hash is null)
 
-The authentication system ensures secure user registration and login through both email/password and Google OAuth, all AI features are properly gated, user data is isolated, and admins can manage access control through a dedicated dashboard. Google OAuth integration provides a seamless, secure sign-in experience while maintaining full compatibility with the existing email/password system.
+The authentication system ensures secure user registration and login through both email/password and Firebase Google OAuth. All AI features are properly gated, user data is isolated, and admins can manage access control through a dedicated dashboard. Firebase integration provides a seamless, secure sign-in experience while maintaining full compatibility with the existing email/password system. Firebase also handles push notifications, creating a unified authentication and notification infrastructure.
 
 ## Internationalization (i18n)
 TaskSpark AI supports **full internationalization** with **Russian as the primary language**:
