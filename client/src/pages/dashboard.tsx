@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showReorganizeDrawer, setShowReorganizeDrawer] = useState(false);
+  const [editingTask, setEditingTask] = useState<any | null>(null);
   const { toast } = useToast();
   const {
     taskToSave,
@@ -112,6 +113,26 @@ export default function Dashboard() {
 
   const handleBreakdownTask = (task: any) => {
     breakdownTaskMutation.mutate(task.title);
+  };
+
+  const handleEditTask = (task: any) => {
+    setEditingTask(task);
+    setShowTaskModal(true);
+  };
+
+  const handleUpdateTask = async (data: InsertTask) => {
+    if (editingTask) {
+      await apiRequest("PATCH", `/api/tasks/${editingTask.id}`, data);
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      toast({
+        title: "Task updated",
+        description: "Your task has been updated successfully.",
+      });
+      setShowTaskModal(false);
+      setEditingTask(null);
+    } else {
+      await handleCreateTask(data);
+    }
   };
 
   if (tasksLoading || insightsLoading) {
@@ -235,6 +256,7 @@ export default function Dashboard() {
                   key={task.id}
                   task={task}
                   onToggleComplete={handleToggleComplete}
+                  onEdit={handleEditTask}
                   onDelete={(id) => deleteTaskMutation.mutate(id)}
                   onSaveAsTemplate={handleSaveAsTemplate}
                   onBreakdown={handleBreakdownTask}
@@ -282,8 +304,12 @@ export default function Dashboard() {
 
       <TaskCreationModal
         open={showTaskModal}
-        onOpenChange={setShowTaskModal}
-        onSubmit={handleCreateTask}
+        onOpenChange={(open) => {
+          setShowTaskModal(open);
+          if (!open) setEditingTask(null);
+        }}
+        onSubmit={handleUpdateTask}
+        initialTask={editingTask}
       />
 
       <SaveTemplateDialog

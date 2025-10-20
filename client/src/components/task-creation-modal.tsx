@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertTaskSchema, type InsertTask } from "@shared/schema";
@@ -42,12 +42,14 @@ interface TaskCreationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: InsertTask) => Promise<void>;
+  initialTask?: any;
 }
 
 export function TaskCreationModal({
   open,
   onOpenChange,
   onSubmit,
+  initialTask,
 }: TaskCreationModalProps) {
   const [isAIParsing, setIsAIParsing] = useState(false);
 
@@ -70,6 +72,43 @@ export function TaskCreationModal({
     },
   });
 
+  // Reset form when initialTask changes
+  useEffect(() => {
+    if (initialTask) {
+      form.reset({
+        title: initialTask.title || "",
+        description: initialTask.description || "",
+        priority: initialTask.priority || "medium",
+        status: initialTask.status || "todo",
+        dueDate: initialTask.dueDate ? new Date(initialTask.dueDate) : undefined,
+        projectId: initialTask.projectId || undefined,
+        isAISuggested: initialTask.isAISuggested || false,
+        aiCategory: initialTask.aiCategory || undefined,
+        isRecurring: initialTask.isRecurring || false,
+        recurrencePattern: initialTask.recurrencePattern || undefined,
+        recurrenceInterval: initialTask.recurrenceInterval || "1",
+        recurrenceEndDate: initialTask.recurrenceEndDate ? new Date(initialTask.recurrenceEndDate) : undefined,
+        recurrenceEndCount: initialTask.recurrenceEndCount || undefined,
+      });
+    } else {
+      form.reset({
+        title: "",
+        description: "",
+        priority: "medium",
+        status: "todo",
+        dueDate: undefined,
+        projectId: undefined,
+        isAISuggested: false,
+        aiCategory: undefined,
+        isRecurring: false,
+        recurrencePattern: undefined,
+        recurrenceInterval: "1",
+        recurrenceEndDate: undefined,
+        recurrenceEndCount: undefined,
+      });
+    }
+  }, [initialTask, form]);
+
   const handleSubmit = async (data: InsertTask) => {
     await onSubmit(data);
     form.reset();
@@ -81,7 +120,7 @@ export function TaskCreationModal({
       <DialogContent className="max-w-2xl" data-testid="modal-create-task">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            Create New Task
+            {initialTask ? "Edit Task" : "Create New Task"}
             {isAIParsing && (
               <span className="flex items-center gap-1 text-sm font-normal text-primary">
                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -90,7 +129,7 @@ export function TaskCreationModal({
             )}
           </DialogTitle>
           <DialogDescription>
-            Add a new task with details and AI-powered suggestions
+            {initialTask ? "Update task details and settings" : "Add a new task with details and AI-powered suggestions"}
           </DialogDescription>
         </DialogHeader>
 
