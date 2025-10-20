@@ -12,7 +12,12 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: 'jsdom',
+    environmentMatchGlobs: [
+      // Client-side tests use jsdom
+      ['client/**/*.{test,spec}.{js,ts,jsx,tsx}', 'jsdom'],
+      // Server-side tests use node environment
+      ['server/**/*.{test,spec}.{js,ts,jsx,tsx}', 'node'],
+    ],
     setupFiles: ['./client/src/__tests__/setup.ts'],
     testTimeout: 30000,
     include: ['**/__tests__/**/*.{test,spec}.{js,ts,jsx,tsx}', '**/*.{test,spec}.{js,ts,jsx,tsx}'],
