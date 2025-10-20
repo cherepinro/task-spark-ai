@@ -133,10 +133,10 @@ TaskSpark AI implements **Replit Auth** for secure user authentication with role
 - **Frontend Authentication**:
   - `client/src/hooks/useAuth.ts` - React hook for auth state management
   - `client/src/lib/authUtils.ts` - Auth utilities and API helpers
-  - `client/src/pages/landing.tsx` - Landing page for logged-out users
   - `client/src/pages/admin.tsx` - Admin dashboard for user management
   - `client/src/App.tsx` - Auth state handling and protected routes
-  - Automatic redirect to landing page when not authenticated
+  - **Streamlined login flow**: Unauthenticated users are automatically redirected to Replit Auth login (no separate landing page)
+  - Brief loading screen before redirect to login
   - Sidebar includes logout button and admin link (for admins)
 
 - **Admin Features** (`/admin` page):
