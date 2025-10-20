@@ -19,7 +19,37 @@
     "signIn": "Войти / Регистрация",
     "logOut": "Выйти",
     "getStarted": "Начать бесплатно",
-    "learnMore": "Узнать больше"
+    "learnMore": "Узнать больше",
+    "login": {
+      "title": "Войти в свой аккаунт",
+      "email": "Электронная почта",
+      "password": "Пароль",
+      "submit": "Войти",
+      "loggingIn": "Вход...",
+      "success": "Вход выполнен",
+      "successMessage": "Добро пожаловать!",
+      "error": "Ошибка входа",
+      "errorMessage": "Неверный email или пароль",
+      "noAccount": "Нет аккаунта?",
+      "signupLink": "Зарегистрироваться"
+    },
+    "signup": {
+      "title": "Создать новый аккаунт",
+      "email": "Электронная почта",
+      "password": "Пароль",
+      "firstName": "Имя",
+      "lastName": "Фамилия",
+      "firstNamePlaceholder": "Иван",
+      "lastNamePlaceholder": "Иванов",
+      "submit": "Создать аккаунт",
+      "creatingAccount": "Создание аккаунта...",
+      "success": "Аккаунт создан",
+      "successMessage": "Ваш аккаунт успешно создан!",
+      "error": "Ошибка регистрации",
+      "errorMessage": "Не удалось создать аккаунт",
+      "hasAccount": "Уже есть аккаунт?",
+      "loginLink": "Войти"
+    }
   },
   "landing": {
     "poweredByAI": "На базе AI",

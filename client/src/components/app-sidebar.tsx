@@ -28,6 +28,9 @@ import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 const navigationItems = [
   {
@@ -85,6 +88,24 @@ export function AppSidebar({ onQuickAdd }: AppSidebarProps) {
   const [location] = useLocation();
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { toast } = useToast();
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", "/api/logout", {});
+    },
+    onSuccess: () => {
+      queryClient.clear();
+      window.location.href = "/login";
+    },
+    onError: () => {
+      toast({
+        title: t("auth.logOut"),
+        description: "Failed to log out",
+        variant: "destructive",
+      });
+    },
+  });
 
   return (
     <Sidebar>
@@ -149,49 +170,52 @@ export function AppSidebar({ onQuickAdd }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4 space-y-3">
+      <SidebarFooter className="p-4 space-y-2">
         {user && (
-          <div className="flex items-center gap-2 px-2">
-            {user.profileImageUrl ? (
-              <img
-                src={user.profileImageUrl}
-                alt={user.email || "User"}
-                className="w-8 h-8 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <span className="text-sm font-semibold text-primary">
-                  {user.email?.charAt(0).toUpperCase() || "?"}
-                </span>
+          <>
+            <div className="flex items-center gap-2 px-2">
+              {user.profileImageUrl ? (
+                <img
+                  src={user.profileImageUrl}
+                  alt={user.email || "User"}
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-sm font-semibold text-primary">
+                    {user.email?.charAt(0).toUpperCase() || "?"}
+                  </span>
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{user.email}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {user.firstName && user.lastName
+                    ? `${user.firstName} ${user.lastName}`
+                    : user.isAdmin
+                    ? "Admin"
+                    : "User"}
+                </p>
               </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user.email}</p>
-              <p className="text-xs text-muted-foreground truncate">
-                {user.firstName && user.lastName
-                  ? `${user.firstName} ${user.lastName}`
-                  : user.isAdmin
-                  ? "Admin"
-                  : "User"}
-              </p>
             </div>
-          </div>
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2"
+              onClick={() => logoutMutation.mutate()}
+              disabled={logoutMutation.isPending}
+              data-testid="button-logout"
+            >
+              <LogOut className="h-4 w-4" />
+              {t('auth.logOut')}
+            </Button>
+            <div className="rounded-lg bg-sidebar-accent p-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Sparkles className="h-3 w-3 text-primary" />
+                <span>AI-powered insights active</span>
+              </div>
+            </div>
+          </>
         )}
-        <Button
-          variant="outline"
-          className="w-full justify-start gap-2"
-          onClick={() => window.location.href = "/api/logout"}
-          data-testid="button-logout"
-        >
-          <LogOut className="h-4 w-4" />
-          {t('auth.logOut')}
-        </Button>
-        <div className="rounded-lg bg-sidebar-accent p-3">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Sparkles className="h-3 w-3 text-primary" />
-            <span>AI-powered insights active</span>
-          </div>
-        </div>
       </SidebarFooter>
     </Sidebar>
   );

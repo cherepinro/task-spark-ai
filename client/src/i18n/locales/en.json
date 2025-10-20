@@ -19,7 +19,37 @@
     "signIn": "Sign In / Sign Up",
     "logOut": "Log Out",
     "getStarted": "Get Started Free",
-    "learnMore": "Learn More"
+    "learnMore": "Learn More",
+    "login": {
+      "title": "Sign in to your account",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign In",
+      "loggingIn": "Signing in...",
+      "success": "Login successful",
+      "successMessage": "Welcome back!",
+      "error": "Login error",
+      "errorMessage": "Invalid email or password",
+      "noAccount": "Don't have an account?",
+      "signupLink": "Sign up"
+    },
+    "signup": {
+      "title": "Create a new account",
+      "email": "Email",
+      "password": "Password",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "firstNamePlaceholder": "John",
+      "lastNamePlaceholder": "Doe",
+      "submit": "Create Account",
+      "creatingAccount": "Creating account...",
+      "success": "Account created",
+      "successMessage": "Your account has been created successfully!",
+      "error": "Signup error",
+      "errorMessage": "Failed to create account",
+      "hasAccount": "Already have an account?",
+      "loginLink": "Sign in"
+    }
   },
   "landing": {
     "poweredByAI": "Powered by AI",

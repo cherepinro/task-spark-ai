@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -25,6 +25,8 @@ import Archive from "@/pages/archive";
 import DayPlan from "@/pages/day-plan";
 import Settings from "@/pages/settings";
 import Admin from "@/pages/admin";
+import LoginPage from "@/pages/login";
+import SignupPage from "@/pages/signup";
 import NotFound from "@/pages/not-found";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -35,26 +37,15 @@ import { useAuth } from "@/hooks/useAuth";
 import "@/i18n/config";
 import { Loader2 } from "lucide-react";
 
-// Auto-redirect component for unauthenticated users
-function AuthRedirect() {
-  useEffect(() => {
-    // Redirect to login after a brief moment
-    const timer = setTimeout(() => {
-      window.location.href = "/api/login";
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      <p className="text-muted-foreground">Redirecting to login...</p>
-    </div>
-  );
-}
-
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
+  const [location, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated && location !== "/login" && location !== "/signup") {
+      setLocation("/login");
+    }
+  }, [isAuthenticated, isLoading, location, setLocation]);
 
   if (isLoading) {
     return (
@@ -64,22 +55,24 @@ function Router() {
     );
   }
 
-  if (!isAuthenticated) {
-    return <AuthRedirect />;
-  }
-
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/today" component={Today} />
-      <Route path="/upcoming" component={Upcoming} />
-      <Route path="/projects" component={Projects} />
-      <Route path="/insights" component={Insights} />
-      <Route path="/day-plan" component={DayPlan} />
-      <Route path="/templates" component={Templates} />
-      <Route path="/archive" component={Archive} />
-      <Route path="/settings" component={Settings} />
-      <Route path="/admin" component={Admin} />
+      <Route path="/login" component={LoginPage} />
+      <Route path="/signup" component={SignupPage} />
+      {isAuthenticated ? (
+        <>
+          <Route path="/" component={Dashboard} />
+          <Route path="/today" component={Today} />
+          <Route path="/upcoming" component={Upcoming} />
+          <Route path="/projects" component={Projects} />
+          <Route path="/insights" component={Insights} />
+          <Route path="/day-plan" component={DayPlan} />
+          <Route path="/templates" component={Templates} />
+          <Route path="/archive" component={Archive} />
+          <Route path="/settings" component={Settings} />
+          <Route path="/admin" component={Admin} />
+        </>
+      ) : null}
       <Route component={NotFound} />
     </Switch>
   );
@@ -91,7 +84,7 @@ function AppContent() {
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const { toast } = useToast();
   const filters = useFilters();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   const style = {
     "--sidebar-width": "16rem",
@@ -134,8 +127,8 @@ function AppContent() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // If not authenticated, show router directly (which will auto-redirect to login)
-  if (isLoading || !isAuthenticated) {
+  // If not authenticated, show router directly (which handles login/signup pages)
+  if (!isAuthenticated) {
     return <Router />;
   }
 

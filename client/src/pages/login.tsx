@@ -1,0 +1,127 @@
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { loginSchema, type LoginData } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useTranslation } from "react-i18next";
+import { Link, useLocation } from "wouter";
+
+export default function LoginPage() {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+
+  const form = useForm<LoginData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const loginMutation = useMutation({
+    mutationFn: async (data: LoginData) => {
+      return await apiRequest("POST", "/api/login", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: t("auth.login.success"),
+        description: t("auth.login.successMessage"),
+      });
+      setLocation("/");
+    },
+    onError: (error: any) => {
+      toast({
+        title: t("auth.login.error"),
+        description: error.message || t("auth.login.errorMessage"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: LoginData) => {
+    loginMutation.mutate(data);
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">TaskSpark AI</CardTitle>
+          <CardDescription className="text-center">
+            {t("auth.login.title")}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("auth.login.email")}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="user@example.com"
+                        data-testid="input-email"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("auth.login.password")}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        data-testid="input-password"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loginMutation.isPending}
+                data-testid="button-login"
+              >
+                {loginMutation.isPending ? t("auth.login.loggingIn") : t("auth.login.submit")}
+              </Button>
+            </form>
+          </Form>
+          <div className="mt-4 text-center text-sm">
+            {t("auth.login.noAccount")}{" "}
+            <Link href="/signup" data-testid="link-signup">
+              <span className="text-primary hover:underline">{t("auth.login.signupLink")}</span>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
