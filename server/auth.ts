@@ -1,4 +1,5 @@
 import session from "express-session";
+import passport from "passport";
 import type { Express, RequestHandler } from "express";
 import connectPg from "connect-pg-simple";
 import { authService } from "./services/auth.service";
@@ -6,6 +7,7 @@ import { logger } from "./services/logger.service";
 import { storage } from "./storage";
 import { signupSchema, loginSchema } from "@shared/schema";
 import type { AuthenticatedRequest } from './types';
+import { configurePassport } from "./config/passport";
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
@@ -33,6 +35,13 @@ export function getSession() {
 export async function setupAuth(app: Express) {
   app.set("trust proxy", 1);
   app.use(getSession());
+
+  // Initialize Passport
+  app.use(passport.initialize());
+  app.use(passport.session());
+  
+  // Configure Passport strategies
+  configurePassport();
 
   // Create admin account if needed
   await authService.createAdminIfNeeded();
@@ -120,7 +129,56 @@ export async function setupAuth(app: Express) {
     });
   });
 
-  logger.info("Email/password authentication configured successfully");
+  // Google OAuth routes
+  app.get(
+    "/auth/google",
+    passport.authenticate("google", { scope: ["profile", "email"] })
+  );
+
+  app.get(
+    "/auth/google/callback",
+    passport.authenticate("google", { failureRedirect: "/login" }),
+    (req, res) => {
+      // Successful authentication
+      // Save user ID in session
+      if (req.user && typeof req.user === 'object' && 'id' in req.user) {
+        req.session.userId = (req.user as any).id;
+      }
+      // Redirect to dashboard
+      res.redirect("/");
+    }
+  );
+
+  // Get current authenticated user endpoint
+  app.get("/api/auth/user", async (req, res) => {
+    const userId = req.session.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      res.json({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profileImageUrl: user.profileImageUrl,
+        isAdmin: user.isAdmin,
+        hasAIAccess: user.hasAIAccess,
+      });
+    } catch (error) {
+      logger.error('Get user endpoint error', { error });
+      res.status(500).json({ message: "Failed to get user" });
+    }
+  });
+
+  logger.info("Email/password and Google OAuth authentication configured successfully");
 }
 
 // Authentication middleware - check if user is authenticated

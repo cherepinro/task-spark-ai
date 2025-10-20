@@ -38,7 +38,10 @@ export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByGoogleId(googleId: string): Promise<User | undefined>;
   createUser(user: Partial<UpsertUser> & { email: string; passwordHash: string }): Promise<User>;
+  createGoogleUser(user: { email: string; googleId: string; firstName?: string; lastName?: string; profileImageUrl?: string | null }): Promise<User>;
+  linkGoogleAccount(userId: string, googleId: string, profileImageUrl?: string | null): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
@@ -95,11 +98,60 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.googleId, googleId));
+    return user;
+  }
+
   async createUser(userData: Partial<UpsertUser> & { email: string; passwordHash: string }): Promise<User> {
     const [user] = await db
       .insert(users)
       .values(userData)
       .returning();
+    return user;
+  }
+
+  async createGoogleUser(userData: { 
+    email: string; 
+    googleId: string; 
+    firstName?: string; 
+    lastName?: string; 
+    profileImageUrl?: string | null 
+  }): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        email: userData.email,
+        googleId: userData.googleId,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        profileImageUrl: userData.profileImageUrl,
+        passwordHash: null, // OAuth users don't have passwords
+      })
+      .returning();
+    return user;
+  }
+
+  async linkGoogleAccount(userId: string, googleId: string, profileImageUrl?: string | null): Promise<User> {
+    const updates: Partial<User> = {
+      googleId,
+      updatedAt: new Date(),
+    };
+    
+    if (profileImageUrl) {
+      updates.profileImageUrl = profileImageUrl;
+    }
+
+    const [user] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, userId))
+      .returning();
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
     return user;
   }
 
