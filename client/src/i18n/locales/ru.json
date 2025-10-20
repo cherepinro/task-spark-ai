@@ -31,7 +31,9 @@
       "error": "Ошибка входа",
       "errorMessage": "Неверный email или пароль",
       "noAccount": "Нет аккаунта?",
-      "signupLink": "Зарегистрироваться"
+      "signupLink": "Зарегистрироваться",
+      "googleSignIn": "Войти через Google",
+      "orDivider": "или"
     },
     "signup": {
       "title": "Создать новый аккаунт",

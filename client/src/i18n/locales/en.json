@@ -31,7 +31,9 @@
       "error": "Login error",
       "errorMessage": "Invalid email or password",
       "noAccount": "Don't have an account?",
-      "signupLink": "Sign up"
+      "signupLink": "Sign up",
+      "googleSignIn": "Sign in with Google",
+      "orDivider": "or"
     },
     "signup": {
       "title": "Create a new account",

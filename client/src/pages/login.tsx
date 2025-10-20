@@ -12,11 +12,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "wouter";
+import { SiGoogle } from "react-icons/si";
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -66,6 +68,32 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Google Sign In */}
+          <div className="mb-6">
+            <Button
+              variant="outline"
+              className="w-full gap-2"
+              onClick={() => window.location.href = "/auth/google"}
+              data-testid="button-google-signin"
+            >
+              <SiGoogle className="h-4 w-4" />
+              {t("auth.login.googleSignIn")}
+            </Button>
+          </div>
+
+          {/* Divider */}
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <Separator />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">
+                {t("auth.login.orDivider")}
+              </span>
+            </div>
+          </div>
+
+          {/* Email/Password Form */}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
