@@ -6,6 +6,7 @@ import { swaggerDocument } from "./swagger";
 import { firebaseService } from "./services/firebase.service";
 
 const app = express();
+export { app };
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
