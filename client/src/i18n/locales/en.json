@@ -1,0 +1,243 @@
+{
+  "app": {
+    "name": "TaskSpark AI",
+    "tagline": "Intelligent Task Management"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "today": "Today",
+    "upcoming": "Upcoming",
+    "projects": "Projects",
+    "insights": "AI Insights",
+    "dayPlanner": "Day Planner",
+    "templates": "Templates",
+    "archive": "Archive",
+    "settings": "Settings",
+    "admin": "Admin"
+  },
+  "auth": {
+    "signIn": "Sign In / Sign Up",
+    "logOut": "Log Out",
+    "getStarted": "Get Started Free",
+    "learnMore": "Learn More"
+  },
+  "landing": {
+    "poweredByAI": "Powered by AI",
+    "hero": {
+      "title": "Intelligent Task Management",
+      "subtitle": "Powered by AI",
+      "description": "TaskSpark AI combines powerful AI features with a simple interface to help you focus on what matters."
+    },
+    "features": {
+      "title": "Everything you need to stay productive",
+      "aiInsights": "AI Insights",
+      "aiInsightsDesc": "Smart priority suggestions",
+      "dayPlanner": "Day Planner",
+      "dayPlannerDesc": "AI-optimized scheduling",
+      "focusSprint": "Focus Sprint",
+      "focusSprintDesc": "Neuro-inclusive productivity sessions",
+      "naturalLanguage": "Natural Language",
+      "naturalLanguageDesc": "Create tasks with your voice",
+      "procrastination": "Procrastination Analysis",
+      "procrastinationDesc": "ML-powered pattern detection",
+      "crossPlatform": "Cross-Platform",
+      "crossPlatformDesc": "Web and mobile apps"
+    },
+    "cta": {
+      "title": "Ready to transform your productivity?",
+      "subtitle": "Join thousands of users managing their tasks with AI"
+    }
+  },
+  "tasks": {
+    "title": "Task",
+    "new": "New Task",
+    "add": "Add Task",
+    "quickAdd": "Quick Add",
+    "create": "Create Task",
+    "edit": "Edit",
+    "delete": "Delete",
+    "complete": "Complete",
+    "archive": "Archive",
+    "breakdown": "Breakdown Task",
+    "saveTemplate": "Save as Template",
+    "aiSuggested": "AI Suggested",
+    "recurring": "Recurring Task",
+    "noTasks": "No tasks",
+    "noTasksToday": "No tasks for today",
+    "allCaughtUp": "All caught up!",
+    "noUpcoming": "No upcoming tasks",
+    "noArchived": "No archived tasks",
+    "fields": {
+      "title": "Task Title",
+      "titleRequired": "Task Title *",
+      "description": "Description",
+      "priority": "Priority",
+      "dueDate": "Due Date",
+      "project": "Project",
+      "projectOptional": "Project (Optional)",
+      "repeat": "Repeat",
+      "every": "Every",
+      "endDate": "End Date (Optional)",
+      "hours": "Hours",
+      "estimatedHours": "Estimated Hours"
+    },
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "status": {
+      "todo": "To Do",
+      "in_progress": "In Progress",
+      "completed": "Completed",
+      "archived": "Archived"
+    },
+    "recurrence": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    }
+  },
+  "projects": {
+    "title": "Projects",
+    "new": "New Project",
+    "noProjects": "No projects yet",
+    "createFirst": "Create your first project to organize tasks"
+  },
+  "templates": {
+    "title": "Task Templates",
+    "save": "Save Template",
+    "name": "Template Name",
+    "use": "Use Template",
+    "delete": "Delete Template",
+    "deleteConfirm": "Are you sure you want to delete this template? This action cannot be undone.",
+    "noTemplates": "No templates yet",
+    "createFirst": "Save a task as a template for quick reuse"
+  },
+  "insights": {
+    "title": "AI Insights",
+    "noInsights": "No insights yet",
+    "generateFirst": "AI insights will appear here as you work on tasks"
+  },
+  "dayPlanner": {
+    "title": "AI Day Planner",
+    "selectTasks": "Select Tasks",
+    "todaySchedule": "Today's Schedule",
+    "generatePlan": "Generate Plan",
+    "applyPlan": "Apply Plan",
+    "downloadICS": "Download ICS",
+    "planApplied": "Plan applied!",
+    "datesUpdated": "Task due dates have been updated",
+    "noTasks": "No tasks to plan"
+  },
+  "focusSprint": {
+    "title": "Focus Sprint",
+    "start": "Start 10-min Sprint",
+    "timeRemaining": "Time Remaining",
+    "tasksCompleted": "Tasks Completed",
+    "finish": "Finish Sprint",
+    "stimSound": "Stim Sound",
+    "enableStim": "Enable background sound"
+  },
+  "reorganize": {
+    "title": "Eisenhower Swipe",
+    "subtitle": "AI-powered task reorganization using the Eisenhower Matrix",
+    "analyze": "Analyze Tasks",
+    "accept": "Accept",
+    "skip": "Skip",
+    "applyChanges": "Apply Changes",
+    "allReviewed": "All cards reviewed!",
+    "suggestionsGenerated": "{{count}} suggestion(s) generated using Eisenhower Matrix",
+    "reorganized": "Tasks Reorganized",
+    "appliedSuccess": "Applied {{count}} suggestion(s) successfully.",
+    "noChanges": "No changes to apply",
+    "noAccepted": "You haven't accepted any suggestions."
+  },
+  "bulkImport": {
+    "title": "Import Checklist",
+    "import": "Import Tasks",
+    "checklist": "Checklist",
+    "checklistPlaceholder": "- [ ] First task\n- [ ] Second task\n- [x] Completed task",
+    "defaultPriority": "Default Priority",
+    "success": "Tasks imported successfully! ✓",
+    "created": "Created {{count}} task(s) from checklist"
+  },
+  "ai": {
+    "assistant": "AI Assistant",
+    "chat": "AI Chat",
+    "askAnything": "Ask AI anything...",
+    "thinking": "Thinking...",
+    "help": "Get intelligent help with your tasks",
+    "suggestions": "AI Suggestions",
+    "category": "Category",
+    "decompose": "Decompose Task"
+  },
+  "settings": {
+    "title": "Settings",
+    "notifications": "Notifications",
+    "pushNotifications": "Enable Push Notifications",
+    "focusSprint": "Focus Sprint",
+    "enableSprint": "Enable Focus Sprint",
+    "stimSound": "Stim Sound",
+    "language": "Language",
+    "theme": "Theme",
+    "darkMode": "Dark Mode",
+    "lightMode": "Light Mode"
+  },
+  "admin": {
+    "title": "Admin Dashboard",
+    "userManagement": "User Management",
+    "users": "Users",
+    "email": "Email",
+    "role": "Role",
+    "aiAccess": "AI Access",
+    "admin": "Admin",
+    "actions": "Actions",
+    "grantAccess": "Grant Access",
+    "revokeAccess": "Revoke Access",
+    "makeAdmin": "Make Admin",
+    "removeAdmin": "Remove Admin"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "confirm": "Confirm",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "tomorrow": "Tomorrow",
+    "thisWeek": "This Week",
+    "nextWeek": "Next Week",
+    "overdue": "Overdue"
+  },
+  "errors": {
+    "notFound": "404 Page Not Found",
+    "notFoundDesc": "The page you're looking for doesn't exist.",
+    "goHome": "Go Home",
+    "generic": "Something went wrong",
+    "tryAgain": "Try again"
+  },
+  "commandPalette": {
+    "title": "Command Palette",
+    "placeholder": "Type a command or search...",
+    "noResults": "No results found"
+  },
+  "stats": {
+    "totalTasks": "Total Tasks",
+    "completed": "Completed",
+    "inProgress": "In Progress",
+    "sprints": "Sprints Completed",
+    "productivity": "Productivity"
+  }
+}
