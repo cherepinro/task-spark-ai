@@ -39,9 +39,7 @@ describe('Authentication Regression Tests', () => {
       expect(res.body.message).toBe('Unauthorized');
     });
 
-    it.skip('should return 401 for /api/projects without session', async () => {
-      // NOTE: Projects route is currently not protected with auth middleware
-      // This test is skipped until authentication is added to projects routes
+    it('should return 401 for /api/projects without session', async () => {
       const res = await request(app)
         .get('/api/projects')
         .expect(401);
@@ -100,9 +98,7 @@ describe('Authentication Regression Tests', () => {
       expect(res.body).toHaveProperty('focusSprintEnabled');
     });
 
-    it.skip('should allow updating user preferences with valid session', async () => {
-      // NOTE: storage.updateUser is not implemented yet
-      // This test is skipped until the method is implemented in storage
+    it('should allow updating user preferences with valid session', async () => {
       const res = await request(app)
         .patch('/api/auth/user')
         .set('Cookie', [`connect.sid=${signedCookie}`])
@@ -246,9 +242,9 @@ describe('Authentication Regression Tests', () => {
 
   describe('Authorization Middleware', () => {
     it('should require authentication for protected routes', async () => {
-      // NOTE: /api/projects is currently not protected
       const protectedRoutes = [
         '/api/tasks',
+        '/api/projects',
         '/api/settings',
         '/api/stats',
         '/api/templates',

@@ -985,7 +985,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Task Template routes
-  app.get("/api/templates", async (_req: Request, res: Response) => {
+  app.get("/api/templates", isAuthenticated, async (_req: Request, res: Response) => {
     try {
       // Try cache first
       const cached = dataCacheService.getTemplates();
@@ -1004,7 +1004,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/templates/:id", async (req: Request, res: Response) => {
+  app.get("/api/templates/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const template = await storage.getTemplate(req.params.id);
       if (!template) {
@@ -1016,7 +1016,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/templates", async (req: Request, res: Response) => {
+  app.post("/api/templates", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const validatedData = insertTaskTemplateSchema.parse(req.body);
       const template = await storage.createTemplate(validatedData);
@@ -1033,7 +1033,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/templates/:id", async (req: Request, res: Response) => {
+  app.patch("/api/templates/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const validatedData = insertTaskTemplateSchema.partial().parse(req.body);
       const template = await storage.updateTemplate(req.params.id, validatedData);
@@ -1053,7 +1053,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/templates/:id", async (req: Request, res: Response) => {
+  app.delete("/api/templates/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const success = await storage.deleteTemplate(req.params.id);
       if (!success) {
@@ -1070,7 +1070,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create task from template
-  app.post("/api/templates/:id/create-task", async (req: Request, res: Response) => {
+  app.post("/api/templates/:id/create-task", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const template = await storage.getTemplate(req.params.id);
       if (!template) {
@@ -1104,7 +1104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Usage tracking endpoint
-  app.get("/api/usage", async (_req: Request, res: Response) => {
+  app.get("/api/usage", isAuthenticated, async (_req: Request, res: Response) => {
     try {
       const usage = await getAllUsage();
       res.json(usage);
