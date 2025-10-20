@@ -25,7 +25,6 @@ import Archive from "@/pages/archive";
 import DayPlan from "@/pages/day-plan";
 import Settings from "@/pages/settings";
 import Admin from "@/pages/admin";
-import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -34,17 +33,39 @@ import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAuth } from "@/hooks/useAuth";
 import "@/i18n/config";
+import { Loader2 } from "lucide-react";
+
+// Auto-redirect component for unauthenticated users
+function AuthRedirect() {
+  useEffect(() => {
+    // Redirect to login after a brief moment
+    const timer = setTimeout(() => {
+      window.location.href = "/api/login";
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <p className="text-muted-foreground">Redirecting to login...</p>
+    </div>
+  );
+}
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
-  if (isLoading || !isAuthenticated) {
+  if (isLoading) {
     return (
-      <Switch>
-        <Route path="/" component={Landing} />
-        <Route component={Landing} />
-      </Switch>
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
     );
+  }
+
+  if (!isAuthenticated) {
+    return <AuthRedirect />;
   }
 
   return (
@@ -113,7 +134,7 @@ function AppContent() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // If not authenticated, show router directly (which will show landing page)
+  // If not authenticated, show router directly (which will auto-redirect to login)
   if (isLoading || !isAuthenticated) {
     return <Router />;
   }
