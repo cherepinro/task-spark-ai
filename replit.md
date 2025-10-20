@@ -8,6 +8,8 @@ TaskSpark AI is an intelligent task management application available as both a w
 - Follow design guidelines strictly
 - Dark mode as default theme
 - AI features highlighted with purple accent color
+- **Primary language: Russian (Русский)**
+- Full internationalization support (Russian + English)
 
 ## System Architecture
 TaskSpark AI uses a modern full-stack architecture. The frontend is built with **React 18 + TypeScript**, **Vite**, **Tailwind CSS**, and **Shadcn UI**, with **Capacitor 7.4+** enabling a native Android mobile app from the same codebase. State management is handled by **TanStack Query (React Query v5)**, routing by **Wouter**, and form handling by **React Hook Form + Zod**. The backend is implemented with **Express.js + TypeScript**.
@@ -167,6 +169,23 @@ TaskSpark AI implements **Replit Auth** for secure user authentication with role
 
 The authorization system ensures all AI features are properly gated, user data is isolated, and admins can manage access control through a dedicated dashboard.
 
+## Internationalization (i18n)
+TaskSpark AI supports **full internationalization** with **Russian as the primary language**:
+
+- **Library**: `react-i18next` + `i18next` + `i18next-browser-languagedetector`
+- **Default Language**: Russian (ru)
+- **Supported Languages**: Russian (Русский), English
+- **Translation Files**:
+  - `client/src/i18n/locales/ru.json` - Russian translations
+  - `client/src/i18n/locales/en.json` - English translations (fallback)
+- **Configuration**: `client/src/i18n/config.ts` - i18next setup with Russian default
+- **Features**:
+  - Language switcher in Settings page
+  - Automatic language detection from browser/localStorage
+  - Comprehensive translations for all UI elements
+  - Navigation, tasks, projects, AI features, settings, and admin panel
+- **Components**: `LanguageSwitcher` component for language selection
+
 ## External Dependencies
 - **Database**: PostgreSQL (Neon) with Drizzle ORM
 - **Authentication**: Replit Auth with OpenID Connect (OIDC)
@@ -174,3 +193,4 @@ The authorization system ensures all AI features are properly gated, user data i
 - **Drag and Drop**: `@hello-pangea/dnd` for day planner reordering
 - **ML Service**: FastAPI microservice (optionally deployed to Fly.io)
 - **Push Notifications**: Firebase Cloud Messaging (FCM) via Firebase Admin SDK
+- **Internationalization**: `react-i18next` with Russian as primary language
