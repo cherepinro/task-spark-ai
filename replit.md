@@ -99,25 +99,37 @@ TaskSpark AI implements **Firebase Cloud Messaging (FCM)** push notifications fo
 
 The notification service includes automatic detection and cleanup of invalid tokens, multicast messaging for sending to multiple devices, and integration with the task management system to send timely reminders.
 
-## User Authentication & Authorization (PROMPT-14)
-TaskSpark AI implements **custom email/password authentication** with bcrypt password hashing and role-based access control:
+## User Authentication & Authorization (PROMPT-14 + PROMPT-15)
+TaskSpark AI implements **dual authentication**: custom email/password authentication with bcrypt and **Google OAuth 2.0**, providing flexible sign-in options:
 
 - **Authentication System**:
-  - `server/auth.ts` - Authentication routes (login, signup, logout)
+  - `server/auth.ts` - Authentication routes (email/password login, signup, logout, Google OAuth)
+  - `server/config/passport.ts` - Passport.js configuration for Google OAuth strategy
   - `server/services/auth.service.ts` - Password hashing with bcrypt (10 salt rounds)
-  - `server/middleware/auth.middleware.ts` - Authentication and authorization middleware
-  - Session management using PostgreSQL with `connect-pg-simple`
+  - Session management using PostgreSQL with `connect-pg-simple` and Passport.js
   - `isAuthenticated` middleware for protecting routes
   - `requiresAIAccess` middleware for role-based access control
   - Auto-creates admin account on first run (`admin@taskspark.local`)
+  - Google OAuth gracefully disabled if credentials not configured (app runs with email/password only)
+
+- **Google OAuth Integration**:
+  - Passport.js with `passport-google-oauth20` strategy
+  - OAuth routes: `GET /auth/google`, `GET /auth/google/callback`
+  - Automatic user creation or linking when signing in with Google
+  - Links Google account to existing email if email matches
+  - Stores Google profile image URL in user profile
+  - Environment variables: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (optional)
+  - Login page includes "Sign in with Google" button with Google logo
 
 - **Database Schema**:
-  - `users` table - Stores user profiles with role fields:
+  - `users` table - Stores user profiles with role fields and OAuth support:
     - `id`: Unique user identifier (UUID)
     - `email`: User email address (unique, required)
-    - `password_hash`: Bcrypt-hashed password (required)
+    - `password_hash`: Bcrypt-hashed password (nullable for OAuth users)
+    - `google_id`: Google OAuth ID (unique, optional)
     - `first_name`: User first name (optional)
     - `last_name`: User last name (optional)
+    - `profile_image_url`: Profile picture URL (from Google or uploaded)
     - `is_admin`: Admin privileges flag (default: false)
     - `has_ai_access`: AI features access flag (default: true)
     - `push_notifications_enabled`: Push notification preference (default: true)
@@ -156,6 +168,8 @@ TaskSpark AI implements **custom email/password authentication** with bcrypt pas
 - **API Endpoints**:
   - `POST /api/signup` - Create new user account (email, password, firstName?, lastName?)
   - `POST /api/login` - Authenticate user (email, password)
+  - `GET /auth/google` - Redirect to Google OAuth consent screen
+  - `GET /auth/google/callback` - Google OAuth callback (creates/links user, redirects to dashboard)
   - `POST /api/logout` - End user session
   - `GET /api/auth/user` - Get current user profile
   - `PATCH /api/auth/user` - Update user preferences (push notifications)
@@ -177,12 +191,13 @@ TaskSpark AI implements **custom email/password authentication** with bcrypt pas
   - Automatic session invalidation on logout
 
 - **Password Security**:
-  - Bcrypt hashing with 10 salt rounds
+  - Bcrypt hashing with 10 salt rounds for email/password users
   - Password validation on signup
   - Email uniqueness enforced at database level
   - Automatic admin password generation on first run
+  - OAuth users don't have passwords (password_hash is null)
 
-The authentication system ensures secure user registration and login, all AI features are properly gated, user data is isolated, and admins can manage access control through a dedicated dashboard.
+The authentication system ensures secure user registration and login through both email/password and Google OAuth, all AI features are properly gated, user data is isolated, and admins can manage access control through a dedicated dashboard. Google OAuth integration provides a seamless, secure sign-in experience while maintaining full compatibility with the existing email/password system.
 
 ## Internationalization (i18n)
 TaskSpark AI supports **full internationalization** with **Russian as the primary language**:

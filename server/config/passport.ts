@@ -20,12 +20,12 @@ export function configurePassport() {
   passport.use(
     new GoogleStrategy(
       {
-        clientID: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        clientID: process.env.GOOGLE_CLIENT_ID!,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
         callbackURL: "/auth/google/callback",
         scope: ["profile", "email"],
       },
-      async (accessToken, refreshToken, profile, done) => {
+      async (accessToken: string, refreshToken: string, profile: any, done: any) => {
         try {
           // Extract user info from Google profile
           const googleId = profile.id;
