@@ -19,11 +19,15 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "wouter";
 import { SiGoogle } from "react-icons/si";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "@/lib/firebase";
+import { useState } from "react";
 
 export default function LoginPage() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const form = useForm<LoginData>({
     resolver: zodResolver(loginSchema),
@@ -54,6 +58,36 @@ export default function LoginPage() {
     },
   });
 
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsGoogleLoading(true);
+      const result = await signInWithPopup(auth, googleProvider);
+      
+      // Get Firebase ID token
+      const idToken = await result.user.getIdToken();
+      
+      // Send token to backend for verification and session creation
+      await apiRequest("POST", "/api/auth/firebase", { idToken });
+      
+      // Invalidate auth query and redirect
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: t("auth.login.success"),
+        description: t("auth.login.successMessage"),
+      });
+      setLocation("/");
+    } catch (error: any) {
+      console.error("Google sign-in error:", error);
+      toast({
+        title: t("auth.login.error"),
+        description: error.message || t("auth.login.googleError"),
+        variant: "destructive",
+      });
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
   const onSubmit = (data: LoginData) => {
     loginMutation.mutate(data);
   };
@@ -73,11 +107,12 @@ export default function LoginPage() {
             <Button
               variant="outline"
               className="w-full gap-2"
-              onClick={() => window.location.href = "/auth/google"}
+              onClick={handleGoogleSignIn}
+              disabled={isGoogleLoading}
               data-testid="button-google-signin"
             >
               <SiGoogle className="h-4 w-4" />
-              {t("auth.login.googleSignIn")}
+              {isGoogleLoading ? t("auth.login.signingInGoogle") : t("auth.login.googleSignIn")}
             </Button>
           </div>
 

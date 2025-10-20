@@ -33,6 +33,8 @@
       "noAccount": "Don't have an account?",
       "signupLink": "Sign up",
       "googleSignIn": "Sign in with Google",
+      "signingInGoogle": "Signing in with Google...",
+      "googleError": "Failed to sign in with Google",
       "orDivider": "or"
     },
     "signup": {

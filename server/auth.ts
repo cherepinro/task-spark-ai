@@ -8,6 +8,8 @@ import { storage } from "./storage";
 import { signupSchema, loginSchema } from "@shared/schema";
 import type { AuthenticatedRequest } from './types';
 import { configurePassport } from "./config/passport";
+import { firebaseService } from "./services/firebase.service";
+import { z } from "zod";
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
@@ -115,6 +117,73 @@ export async function setupAuth(app: Express) {
     } catch (error) {
       logger.error('Signup endpoint error', { error });
       res.status(500).json({ message: "Signup failed" });
+    }
+  });
+
+  // Firebase Authentication endpoint
+  app.post("/api/auth/firebase", async (req, res) => {
+    try {
+      const { idToken } = z.object({ idToken: z.string() }).parse(req.body);
+      
+      // Verify Firebase ID token
+      const decodedToken = await firebaseService.verifyIdToken(idToken);
+      
+      if (!decodedToken) {
+        return res.status(401).json({ message: "Invalid Firebase token" });
+      }
+
+      const { email, name, picture, uid } = decodedToken;
+
+      if (!email) {
+        return res.status(400).json({ message: "Email not provided by Firebase" });
+      }
+
+      // Check if user exists in our database
+      let user = await storage.getUserByEmail(email);
+
+      if (!user) {
+        // Create new user
+        const [firstName, ...lastNameParts] = (name || email.split('@')[0]).split(' ');
+        const lastName = lastNameParts.join(' ') || undefined;
+
+        user = await storage.createUser({
+          email,
+          passwordHash: null, // OAuth users don't have passwords
+          firstName: firstName || undefined,
+          lastName,
+          googleId: uid,
+          profileImageUrl: picture || undefined,
+        });
+
+        logger.info('New user created via Firebase OAuth', { email, uid });
+      } else if (!user.googleId) {
+        // Link Google account to existing user
+        await storage.linkGoogleAccount(user.id, uid, picture);
+        logger.info('Google account linked to existing user', { email, uid });
+      }
+
+      // Update profile image if changed
+      if (picture && user.profileImageUrl !== picture) {
+        await storage.linkGoogleAccount(user.id, uid, picture);
+      }
+
+      // Save user ID in session
+      req.session.userId = user.id;
+
+      res.json({
+        message: "Authentication successful",
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          isAdmin: user.isAdmin,
+          hasAIAccess: user.hasAIAccess,
+        }
+      });
+    } catch (error) {
+      logger.error('Firebase authentication error', { error });
+      res.status(500).json({ message: "Authentication failed" });
     }
   });
 

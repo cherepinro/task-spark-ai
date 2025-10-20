@@ -33,6 +33,8 @@
       "noAccount": "Нет аккаунта?",
       "signupLink": "Зарегистрироваться",
       "googleSignIn": "Войти через Google",
+      "signingInGoogle": "Вход через Google...",
+      "googleError": "Не удалось войти через Google",
       "orDivider": "или"
     },
     "signup": {
