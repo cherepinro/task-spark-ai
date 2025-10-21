@@ -184,23 +184,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserRole(id: string, isAdmin: boolean, hasAIAccess: boolean): Promise<User | undefined> {
-    // Log the update attempt
-    console.log('[updateUserRole] Attempting to update user:', { id, isAdmin, hasAIAccess });
-    
     const [user] = await db
       .update(users)
       .set({ isAdmin, hasAIAccess, updatedAt: new Date() })
       .where(eq(users.id, id))
       .returning();
-    
-    // Log the result
-    console.log('[updateUserRole] Update result:', user ? { 
-      id: user.id, 
-      email: user.email,
-      isAdmin: user.isAdmin, 
-      hasAIAccess: user.hasAIAccess 
-    } : 'User not found');
-    
     return user;
   }
 
