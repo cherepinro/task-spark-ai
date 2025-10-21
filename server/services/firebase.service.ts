@@ -1,4 +1,4 @@
-import * as admin from 'firebase-admin';
+import admin from 'firebase-admin';
 import { logger } from './logger.service';
 
 let isInitialized = false;
@@ -26,16 +26,58 @@ class FirebaseService {
         return;
       }
 
-      const serviceAccount = JSON.parse(serviceAccountJson);
+      logger.info('🔧 Parsing Firebase service account JSON...');
+      let serviceAccount;
+      try {
+        serviceAccount = JSON.parse(serviceAccountJson);
+        logger.info('✅ Service account JSON parsed successfully', {
+          projectId: serviceAccount.project_id,
+          clientEmail: serviceAccount.client_email
+        });
+      } catch (parseError: any) {
+        logger.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON', {
+          error: parseError.message,
+          jsonLength: serviceAccountJson.length,
+          jsonPreview: serviceAccountJson.substring(0, 100)
+        });
+        return;
+      }
+
+      // Validate service account structure
+      if (!serviceAccount.project_id || !serviceAccount.private_key || !serviceAccount.client_email) {
+        logger.error('❌ Invalid service account JSON - missing required fields', {
+          hasProjectId: !!serviceAccount.project_id,
+          hasPrivateKey: !!serviceAccount.private_key,
+          hasClientEmail: !!serviceAccount.client_email
+        });
+        return;
+      }
+
+      logger.info('🔧 Initializing Firebase Admin SDK...');
+      
+      // Check if admin.credential exists
+      if (!admin.credential) {
+        logger.error('❌ admin.credential is undefined - firebase-admin module may not be loaded correctly');
+        logger.error('Debugging info:', {
+          adminType: typeof admin,
+          adminKeys: Object.keys(admin).slice(0, 10),
+          hasInitializeApp: typeof admin.initializeApp
+        });
+        return;
+      }
 
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
       });
 
       isInitialized = true;
-      logger.info('Firebase Admin SDK initialized successfully');
-    } catch (error) {
-      logger.error('Failed to initialize Firebase Admin SDK', error);
+      logger.info('✅ Firebase Admin SDK initialized successfully');
+    } catch (error: any) {
+      logger.error('❌ Failed to initialize Firebase Admin SDK', {
+        error: error.message,
+        stack: error.stack,
+        name: error.name
+      });
     }
   }
 
