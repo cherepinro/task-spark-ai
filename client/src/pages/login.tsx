@@ -61,13 +61,19 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
+      console.log('🚀 Starting Google sign-in...');
+      
       const result = await signInWithPopup(auth, googleProvider);
+      console.log('✅ Google popup sign-in successful', { email: result.user.email });
       
       // Get Firebase ID token
       const idToken = await result.user.getIdToken();
+      console.log('🎫 Firebase ID token obtained', { tokenLength: idToken.length });
       
       // Send token to backend for verification and session creation
-      await apiRequest("POST", "/api/auth/firebase", { idToken });
+      console.log('📨 Sending token to backend...');
+      const response = await apiRequest("POST", "/api/auth/firebase", { idToken });
+      console.log('✅ Backend authentication successful', response);
       
       // Invalidate auth query and redirect
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
@@ -77,10 +83,27 @@ export default function LoginPage() {
       });
       setLocation("/");
     } catch (error: any) {
-      console.error("Google sign-in error:", error);
+      console.error("❌ Google sign-in error:", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        fullError: error
+      });
+      
+      // Provide user-friendly error message
+      let errorMessage = error.message || t("auth.login.googleError");
+      
+      if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = 'Sign-in cancelled';
+      } else if (error.code === 'auth/unauthorized-domain') {
+        errorMessage = 'This domain is not authorized. Please add it to Firebase Console → Authentication → Settings → Authorized domains';
+      } else if (error.details) {
+        errorMessage = `${error.message} (${error.details})`;
+      }
+      
       toast({
         title: t("auth.login.error"),
-        description: error.message || t("auth.login.googleError"),
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

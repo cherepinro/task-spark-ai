@@ -168,15 +168,35 @@ class FirebaseService {
    */
   async verifyIdToken(idToken: string): Promise<admin.auth.DecodedIdToken | null> {
     if (!isInitialized) {
-      logger.warn('Firebase not initialized. Cannot verify ID token.');
+      logger.error('❌ Firebase Admin SDK NOT initialized - cannot verify ID token');
+      logger.error('🔧 Solution: Set FIREBASE_SERVICE_ACCOUNT_JSON in Replit Secrets');
       return null;
     }
 
     try {
+      logger.info('🔍 Attempting to verify Firebase ID token...');
       const decodedToken = await admin.auth().verifyIdToken(idToken);
+      logger.info('✅ Firebase ID token verified successfully', { 
+        email: decodedToken.email,
+        uid: decodedToken.uid 
+      });
       return decodedToken;
-    } catch (error) {
-      logger.error('Failed to verify Firebase ID token', error);
+    } catch (error: any) {
+      logger.error('❌ Failed to verify Firebase ID token', { 
+        error: error.message,
+        code: error.code,
+        stack: error.stack 
+      });
+      
+      // Provide specific error guidance
+      if (error.code === 'auth/argument-error') {
+        logger.error('🔧 Token format is invalid - check frontend Firebase initialization');
+      } else if (error.code === 'auth/id-token-expired') {
+        logger.error('🔧 Token has expired - user needs to sign in again');
+      } else if (error.code === 'auth/invalid-id-token') {
+        logger.error('🔧 Token is invalid - check Firebase project configuration');
+      }
+      
       return null;
     }
   }

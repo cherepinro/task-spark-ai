@@ -123,14 +123,32 @@ export async function setupAuth(app: Express) {
   // Firebase Authentication endpoint
   app.post("/api/auth/firebase", async (req, res) => {
     try {
+      logger.info('📨 Firebase auth request received');
+      
       const { idToken } = z.object({ idToken: z.string() }).parse(req.body);
+      logger.info('🎫 ID token received from client', { tokenLength: idToken.length });
+      
+      // Check if Firebase is initialized
+      if (!firebaseService.isReady()) {
+        logger.error('❌ Firebase Admin SDK not initialized');
+        return res.status(500).json({ 
+          message: "Firebase authentication not configured. Please contact administrator.",
+          details: "FIREBASE_SERVICE_ACCOUNT_JSON environment variable is missing"
+        });
+      }
       
       // Verify Firebase ID token
       const decodedToken = await firebaseService.verifyIdToken(idToken);
       
       if (!decodedToken) {
-        return res.status(401).json({ message: "Invalid Firebase token" });
+        logger.error('❌ Firebase token verification failed');
+        return res.status(401).json({ 
+          message: "Invalid Firebase token",
+          details: "Token verification failed. Check backend logs for details."
+        });
       }
+      
+      logger.info('✅ Token verified, processing user...', { email: decodedToken.email });
 
       const { email, name, picture, uid } = decodedToken;
 
