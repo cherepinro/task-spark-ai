@@ -38,6 +38,7 @@ export const tasks = pgTable("tasks", {
   priority: varchar("priority", { length: 10 }).notNull().default("medium"),
   status: varchar("status", { length: 20 }).notNull().default("todo"),
   dueDate: timestamp("due_date", { mode: "date" }),
+  deadlineDateTime: timestamp("deadline_date_time"),
   projectId: varchar("project_id", { length: 255 }),
   isAISuggested: boolean("is_ai_suggested").default(false),
   aiCategory: text("ai_category"),
@@ -154,6 +155,7 @@ const baseTaskSchema = createInsertSchema(tasks).omit({
   recurrenceInterval: z.string().optional(),
   // Transform date strings from JSON to Date objects
   dueDate: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional(),
+  deadlineDateTime: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional().nullable(),
   completedAt: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional(),
   recurrenceEndDate: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional(),
   // Allow hours as string, number, or null (Drizzle handles conversion)
