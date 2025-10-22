@@ -224,7 +224,7 @@ export function TaskCreationModal({
                     <FormLabel>Project</FormLabel>
                     <Select
                       onValueChange={(value) => {
-                        field.onChange(value === "__none__" ? undefined : value);
+                        field.onChange(value === "__none__" ? null : value);
                       }}
                       value={field.value || "__none__"}
                     >
