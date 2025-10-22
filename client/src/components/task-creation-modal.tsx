@@ -61,6 +61,7 @@ export function TaskCreationModal({
       priority: "medium",
       status: "todo",
       dueDate: undefined,
+      deadlineDateTime: undefined,
       projectId: undefined,
       isAISuggested: false,
       aiCategory: undefined,
@@ -81,6 +82,7 @@ export function TaskCreationModal({
         priority: initialTask.priority || "medium",
         status: initialTask.status || "todo",
         dueDate: initialTask.dueDate ? new Date(initialTask.dueDate) : undefined,
+        deadlineDateTime: initialTask.deadlineDateTime ? new Date(initialTask.deadlineDateTime) : undefined,
         projectId: initialTask.projectId || undefined,
         isAISuggested: initialTask.isAISuggested || false,
         aiCategory: initialTask.aiCategory || undefined,
@@ -97,6 +99,7 @@ export function TaskCreationModal({
         priority: "medium",
         status: "todo",
         dueDate: undefined,
+        deadlineDateTime: undefined,
         projectId: undefined,
         isAISuggested: false,
         aiCategory: undefined,
@@ -247,6 +250,32 @@ export function TaskCreationModal({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="deadlineDateTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Deadline (Date & Time)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="datetime-local"
+                      value={field.value ? format(new Date(field.value), "yyyy-MM-dd'T'HH:mm") : ""}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        field.onChange(value ? new Date(value) : null);
+                      }}
+                      data-testid="input-deadline-datetime"
+                      className="w-full"
+                    />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Optional: Set a specific deadline with time
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
