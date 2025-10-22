@@ -1,15 +1,47 @@
-import { useQuery } from "@tanstack/react-query";
-import { type Project } from "@shared/schema";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { type Project, type InsertProject } from "@shared/schema";
 import { EmptyState } from "@/components/empty-state";
 import { TaskCardSkeleton } from "@/components/loading-state";
 import { FolderKanban, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ProjectCreationModal } from "@/components/project-creation-modal";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 
 export default function Projects() {
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const { toast } = useToast();
+
   const { data: projects, isLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
   });
+
+  const createProjectMutation = useMutation({
+    mutationFn: async (data: InsertProject) => {
+      const res = await apiRequest("POST", "/api/projects", data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      toast({
+        title: "Project created",
+        description: "Your new project has been created successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to create project. Please try again.",
+      });
+    },
+  });
+
+  const handleCreateProject = async (data: InsertProject) => {
+    await createProjectMutation.mutateAsync(data);
+  };
 
   if (isLoading) {
     return (
@@ -31,7 +63,11 @@ export default function Projects() {
             {projects?.length || 0} projects
           </p>
         </div>
-        <Button data-testid="button-add-project" className="gap-2">
+        <Button 
+          data-testid="button-add-project" 
+          className="gap-2"
+          onClick={() => setShowProjectModal(true)}
+        >
           <Plus className="h-4 w-4" />
           New Project
         </Button>
@@ -59,8 +95,15 @@ export default function Projects() {
           title="No projects yet"
           description="Organize your tasks into projects for better management and focus."
           actionLabel="Create Project"
+          onAction={() => setShowProjectModal(true)}
         />
       )}
+
+      <ProjectCreationModal
+        open={showProjectModal}
+        onOpenChange={setShowProjectModal}
+        onSubmit={handleCreateProject}
+      />
     </div>
   );
 }
