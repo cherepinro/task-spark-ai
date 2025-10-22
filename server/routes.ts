@@ -275,6 +275,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // IMPORTANT: /api/tasks/bulk must come BEFORE /api/tasks/:id 
+  // Otherwise Express matches "bulk" as an ID parameter
+  app.patch("/api/tasks/bulk", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { updates } = req.body;
+      
+      if (!Array.isArray(updates)) {
+        return res.status(400).json({ error: "Updates must be an array" });
+      }
+
+      // Validate each update
+      const validatedUpdates = updates.map((update: any) => {
+        if (!update.id) {
+          throw new Error("Each update must have an id");
+        }
+        logger.debug("Bulk update - before parse", { id: update.id, updates: update.updates });
+        const parsed = updateTaskSchema.parse(update.updates);
+        logger.debug("Bulk update - after parse", { id: update.id, parsed });
+        return {
+          id: update.id,
+          updates: parsed,
+        };
+      });
+
+      // Apply all updates
+      const updatedTasks = await Promise.all(
+        validatedUpdates.map(async ({ id, updates }) => {
+          return await storage.updateTask(id, updates);
+        })
+      );
+
+      // Filter out any null results (task not found)
+      const successfulUpdates = updatedTasks.filter(task => task !== null);
+
+      // Invalidate tasks cache
+      dataCacheService.invalidateTasks();
+
+      res.json({
+        count: successfulUpdates.length,
+        tasks: successfulUpdates,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      logger.apiError('PATCH /api/tasks/bulk', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to update tasks" });
+    }
+  });
+
   app.patch("/api/tasks/:id", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const updates = updateTaskSchema.parse(req.body);
@@ -346,51 +396,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete task" });
-    }
-  });
-
-  app.patch("/api/tasks/bulk", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
-    try {
-      const { updates } = req.body;
-      
-      if (!Array.isArray(updates)) {
-        return res.status(400).json({ error: "Updates must be an array" });
-      }
-
-      // Validate each update
-      const validatedUpdates = updates.map((update: any) => {
-        if (!update.id) {
-          throw new Error("Each update must have an id");
-        }
-        return {
-          id: update.id,
-          updates: updateTaskSchema.parse(update.updates),
-        };
-      });
-
-      // Apply all updates
-      const updatedTasks = await Promise.all(
-        validatedUpdates.map(async ({ id, updates }) => {
-          return await storage.updateTask(id, updates);
-        })
-      );
-
-      // Filter out any null results (task not found)
-      const successfulUpdates = updatedTasks.filter(task => task !== null);
-
-      // Invalidate tasks cache
-      dataCacheService.invalidateTasks();
-
-      res.json({
-        count: successfulUpdates.length,
-        tasks: successfulUpdates,
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
-      }
-      logger.apiError('PATCH /api/tasks/bulk', error);
-      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to update tasks" });
     }
   });
 
