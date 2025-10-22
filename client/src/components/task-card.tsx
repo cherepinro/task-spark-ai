@@ -177,6 +177,16 @@ export function TaskCard({
                 </span>
               </div>
             )}
+            {task.deadlineDateTime && (
+              <Badge
+                variant="outline"
+                className="gap-1 border-destructive/30 bg-destructive/5 text-destructive text-xs"
+                data-testid={`badge-deadline-${task.id}`}
+              >
+                <Clock className="h-3 w-3" />
+                {format(new Date(task.deadlineDateTime), "MMM d, HH:mm")}
+              </Badge>
+            )}
             {task.projectId && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <FolderKanban className="h-3 w-3" />
