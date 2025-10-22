@@ -11,7 +11,7 @@ import type { Task } from "@shared/schema";
 
 interface ReorganizeSuggestion {
   id: string;
-  action: "defer" | "delete" | "delegate";
+  quadrant: "urgent-important" | "important" | "urgent" | "not-urgent";
   reason: string;
 }
 
@@ -21,24 +21,34 @@ interface ReorganizeSwipeProps {
   tasks: Task[];
 }
 
-const actionConfig = {
-  defer: {
-    label: "Defer",
+const quadrantConfig = {
+  "urgent-important": {
+    label: "Срочно-Важно",
+    icon: Sparkles,
+    color: "bg-red-500/10 text-red-600 dark:text-red-400",
+    description: "Критические задачи, требующие немедленного внимания",
+    priority: "high" as const,
+  },
+  "important": {
+    label: "Важно",
     icon: Calendar,
     color: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-    description: "Schedule for later",
+    description: "Важные задачи, требующие планирования",
+    priority: "medium" as const,
   },
-  delete: {
-    label: "Delete",
-    icon: Trash2,
-    color: "bg-red-500/10 text-red-600 dark:text-red-400",
-    description: "Remove from list",
-  },
-  delegate: {
-    label: "Delegate",
-    icon: Users,
+  "urgent": {
+    label: "Срочно",
+    icon: Clock,
     color: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
-    description: "Deprioritize or delegate",
+    description: "Срочные задачи, можно делегировать",
+    priority: "high" as const,
+  },
+  "not-urgent": {
+    label: "Не срочно",
+    icon: Trash2,
+    color: "bg-gray-500/10 text-gray-600 dark:text-gray-400",
+    description: "Задачи с низким приоритетом",
+    priority: "low" as const,
   },
 };
 
@@ -109,8 +119,8 @@ export function ReorganizeSwipe({ open, onOpenChange, tasks }: ReorganizeSwipePr
   const handleApply = async () => {
     if (acceptedSuggestions.size === 0) {
       toast({
-        title: "No changes to apply",
-        description: "You haven't accepted any suggestions.",
+        title: "Нет изменений",
+        description: "Вы не приняли ни одного предложения.",
       });
       return;
     }
@@ -119,21 +129,19 @@ export function ReorganizeSwipe({ open, onOpenChange, tasks }: ReorganizeSwipePr
       const updates = suggestions
         .filter(s => acceptedSuggestions.has(s.id))
         .map(s => {
-          const update: any = { id: s.id, updates: {} };
+          const config = quadrantConfig[s.quadrant];
+          const update: any = { 
+            id: s.id, 
+            updates: {
+              priority: config.priority,
+            }
+          };
           
-          if (s.action === "defer") {
-            // Defer: set due date to 7 days from now, lower priority
+          // For not-urgent quadrant, also set due date to +7 days
+          if (s.quadrant === "not-urgent") {
             const deferDate = new Date();
             deferDate.setDate(deferDate.getDate() + 7);
             update.updates.dueDate = deferDate;
-            update.updates.priority = "low";
-          } else if (s.action === "delete") {
-            // Delete: archive the task
-            update.updates.status = "archived";
-          } else if (s.action === "delegate") {
-            // Delegate: lower priority, mark as in-progress
-            update.updates.priority = "low";
-            update.updates.status = "in-progress";
           }
           
           return update;
@@ -144,15 +152,15 @@ export function ReorganizeSwipe({ open, onOpenChange, tasks }: ReorganizeSwipePr
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       
       toast({
-        title: "Tasks Reorganized",
-        description: `Applied ${acceptedSuggestions.size} suggestion(s) successfully.`,
+        title: "Задачи реорганизованы",
+        description: `Применено ${acceptedSuggestions.size} изменений.`,
       });
       
       onOpenChange(false);
     } catch (error: any) {
       toast({
-        title: "Failed to apply changes",
-        description: error.message || "Something went wrong",
+        title: "Ошибка применения изменений",
+        description: error.message || "Что-то пошло не так",
         variant: "destructive",
       });
     }
@@ -212,7 +220,7 @@ export function ReorganizeSwipe({ open, onOpenChange, tasks }: ReorganizeSwipePr
               <div className="relative h-[400px] flex items-center justify-center mb-6">
                 {suggestions.map((suggestion, index) => {
                   const task = tasks.find(t => t.id === suggestion.id);
-                  const config = actionConfig[suggestion.action];
+                  const config = quadrantConfig[suggestion.quadrant];
                   const Icon = config.icon;
                   
                   return (

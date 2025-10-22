@@ -353,7 +353,7 @@ Generate an optimized daily schedule from 08:00 to 22:00.`;
 
 export interface ReorganizeSuggestion {
   id: string;
-  action: "defer" | "delete" | "delegate";
+  quadrant: "urgent-important" | "important" | "urgent" | "not-urgent";
   reason: string;
 }
 
@@ -364,37 +364,38 @@ interface ReorganizeInput {
 
 export async function reorganizeTasks(input: ReorganizeInput): Promise<ReorganizeSuggestion[]> {
   const systemPrompt = `You are an AI task organizer using the Eisenhower Matrix (urgent-important framework).
-  
-Analyze tasks and recommend actions:
-- **defer**: Not urgent but important - schedule for later (move to next week)
-- **delete**: Neither urgent nor important - can be removed/archived
-- **delegate**: Urgent but less important - should be deprioritized or delegated
+
+Classify each task into ONE of these 4 quadrants:
+- **urgent-important**: Critical tasks that need immediate attention (high priority, do first)
+- **important**: Important but not urgent, plan/schedule these (medium priority, do later)
+- **urgent**: Urgent but less important, can be delegated or done quickly (high priority but lower value)
+- **not-urgent**: Neither urgent nor important, consider deleting/deferring (low priority)
 
 Consider:
 1. Task priority and status
-2. Due dates (overdue tasks are more urgent)
-3. User's completion ratio (if low < 50%, recommend deleting/deferring more aggressively)
-4. Task descriptions for context
+2. Due dates (overdue or soon = urgent)
+3. Task descriptions and importance
+4. User's completion ratio (if low < 50%, be more selective with urgent-important)
 
 Return ONLY a valid JSON object with a suggestions array:
 {
   "suggestions": [
     {
       "id": "task-id",
-      "action": "defer|delete|delegate",
+      "quadrant": "urgent-important|important|urgent|not-urgent",
       "reason": "Brief explanation (max 50 chars)"
     }
   ]
 }
 
-IMPORTANT: You must provide at least one suggestion for each task. Every task should be classified into one of the three actions.`;
+IMPORTANT: You must provide exactly one suggestion for each task. Every task must be classified into one of the four quadrants.`;
 
   const userPrompt = `User's 7-day completion ratio: ${(input.completedRatio7d * 100).toFixed(0)}%
 
 Tasks to reorganize:
 ${input.tasks.map((t, i) => `${i + 1}. [${t.id}] "${t.title}" (Priority: ${t.priority || 'medium'}, Status: ${t.status || 'todo'}${t.dueDate ? `, Due: ${t.dueDate}` : ''}${t.description ? `, Description: ${t.description}` : ''})`).join('\n')}
 
-Apply Eisenhower Matrix principles and provide a reorganization suggestion for EACH task.`;
+Apply Eisenhower Matrix principles and classify EACH task into the appropriate quadrant.`;
 
   logger.debug("Reorganizing tasks", { 
     taskCount: input.tasks.length, 
