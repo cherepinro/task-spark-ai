@@ -178,7 +178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/tasks", async (req: Request, res: Response) => {
+  app.post("/api/tasks", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Check task limit
       const taskUsage = await checkUsage('tasks');
