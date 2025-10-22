@@ -118,6 +118,14 @@ export function TaskCreationModal({
     onOpenChange(false);
   };
 
+  // Watch isRecurring and clear dueDate when it's turned off
+  const isRecurring = form.watch("isRecurring");
+  useEffect(() => {
+    if (!isRecurring) {
+      form.setValue("dueDate", undefined);
+    }
+  }, [isRecurring, form]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl" data-testid="modal-create-task">
@@ -209,7 +217,7 @@ export function TaskCreationModal({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Due Date{form.watch("isRecurring") && <span className="text-destructive"> *</span>}
+                      Due Date{isRecurring && <span className="text-destructive"> *</span>}
                     </FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
@@ -221,12 +229,13 @@ export function TaskCreationModal({
                               !field.value && "text-muted-foreground"
                             )}
                             data-testid="button-select-due-date"
+                            disabled={!isRecurring}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {field.value ? (
                               format(new Date(field.value), "PPP")
                             ) : (
-                              <span>Pick a date</span>
+                              <span>{isRecurring ? "Pick a date" : "Enable recurring task first"}</span>
                             )}
                           </Button>
                         </FormControl>
@@ -240,9 +249,15 @@ export function TaskCreationModal({
                         />
                       </PopoverContent>
                     </Popover>
-                    {form.watch("isRecurring") && !field.value && (
+                    {isRecurring ? (
+                      !field.value && (
+                        <p className="text-xs text-muted-foreground">
+                          Required for recurring tasks
+                        </p>
+                      )
+                    ) : (
                       <p className="text-xs text-muted-foreground">
-                        Required for recurring tasks
+                        Due date is only available for recurring tasks
                       </p>
                     )}
                     <FormMessage />
