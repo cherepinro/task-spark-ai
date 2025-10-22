@@ -223,8 +223,10 @@ export function TaskCreationModal({
                   <FormItem>
                     <FormLabel>Project</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
-                      value={field.value || ""}
+                      onValueChange={(value) => {
+                        field.onChange(value === "__none__" ? undefined : value);
+                      }}
+                      value={field.value || "__none__"}
                     >
                       <FormControl>
                         <SelectTrigger data-testid="select-task-project">
@@ -232,7 +234,7 @@ export function TaskCreationModal({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">No project</SelectItem>
+                        <SelectItem value="__none__">No project</SelectItem>
                         {projects?.map((project) => (
                           <SelectItem key={project.id} value={project.id}>
                             {project.name}
