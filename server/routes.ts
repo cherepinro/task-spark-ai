@@ -166,7 +166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/tasks/:id", async (req: Request, res: Response) => {
+  app.get("/api/tasks/:id", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const task = await storage.getTask(req.params.id);
       if (!task) {
@@ -207,7 +207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/tasks/bulk-import", async (req: Request, res: Response) => {
+  app.post("/api/tasks/bulk-import", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Check usage limit
       const usageCheck = await checkUsage('bulk_import');
@@ -275,7 +275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/tasks/:id", async (req: Request, res: Response) => {
+  app.patch("/api/tasks/:id", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const updates = updateTaskSchema.parse(req.body);
       const task = await storage.updateTask(req.params.id, updates);
@@ -333,7 +333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/tasks/:id", async (req: Request, res: Response) => {
+  app.delete("/api/tasks/:id", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const deleted = await storage.deleteTask(req.params.id);
       if (!deleted) {
@@ -349,7 +349,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/tasks/bulk", async (req: Request, res: Response) => {
+  app.patch("/api/tasks/bulk", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { updates } = req.body;
       
