@@ -64,13 +64,21 @@ export default function Dashboard() {
 
   const createTaskMutation = useMutation({
     mutationFn: async (data: InsertTask) => {
-      return await apiRequest("POST", "/api/tasks", data);
+      const res = await apiRequest("POST", "/api/tasks", data);
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       toast({
         title: "Task created",
         description: "Your task has been created successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to create task",
+        description: error.message || "An error occurred while creating the task. Please try again.",
       });
     },
   });
