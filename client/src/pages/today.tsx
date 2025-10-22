@@ -18,6 +18,7 @@ import { useSaveTemplate } from "@/hooks/use-save-template";
 export default function Today() {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showFocusSprint, setShowFocusSprint] = useState(false);
+  const [editingTask, setEditingTask] = useState<any | null>(null);
   const { toast } = useToast();
   const {
     taskToSave,
@@ -116,6 +117,26 @@ export default function Today() {
     breakdownTaskMutation.mutate(task.title);
   };
 
+  const handleEditTask = (task: any) => {
+    setEditingTask(task);
+    setShowTaskModal(true);
+  };
+
+  const handleUpdateTask = async (data: InsertTask) => {
+    if (editingTask) {
+      await apiRequest("PATCH", `/api/tasks/${editingTask.id}`, data);
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      toast({
+        title: "Task updated",
+        description: "Your task has been updated successfully.",
+      });
+      setShowTaskModal(false);
+      setEditingTask(null);
+    } else {
+      await handleCreateTask(data);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="p-6">
@@ -177,6 +198,7 @@ export default function Today() {
                 key={task.id}
                 task={task}
                 onToggleComplete={handleToggleComplete}
+                onEdit={handleEditTask}
                 onDelete={(id) => deleteTaskMutation.mutate(id)}
                 onSaveAsTemplate={handleSaveAsTemplate}
                 onBreakdown={handleBreakdownTask}
@@ -196,8 +218,12 @@ export default function Today() {
 
       <TaskCreationModal
         open={showTaskModal}
-        onOpenChange={setShowTaskModal}
-        onSubmit={handleCreateTask}
+        onOpenChange={(open) => {
+          setShowTaskModal(open);
+          if (!open) setEditingTask(null);
+        }}
+        onSubmit={handleUpdateTask}
+        initialTask={editingTask}
       />
 
       <SaveTemplateDialog

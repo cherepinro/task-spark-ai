@@ -14,6 +14,7 @@ import { useFilteredTasks } from "@/hooks/use-filtered-tasks";
 
 export default function Upcoming() {
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [editingTask, setEditingTask] = useState<any | null>(null);
   const { toast } = useToast();
 
   const { data: tasks, isLoading } = useFilteredTasks();
@@ -102,6 +103,26 @@ export default function Upcoming() {
     breakdownTaskMutation.mutate(task.title);
   };
 
+  const handleEditTask = (task: any) => {
+    setEditingTask(task);
+    setShowTaskModal(true);
+  };
+
+  const handleUpdateTask = async (data: InsertTask) => {
+    if (editingTask) {
+      await apiRequest("PATCH", `/api/tasks/${editingTask.id}`, data);
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      toast({
+        title: "Task updated",
+        description: "Your task has been updated successfully.",
+      });
+      setShowTaskModal(false);
+      setEditingTask(null);
+    } else {
+      await handleCreateTask(data);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="p-6">
@@ -161,6 +182,7 @@ export default function Upcoming() {
                       key={task.id}
                       task={task}
                       onToggleComplete={handleToggleComplete}
+                      onEdit={handleEditTask}
                       onDelete={(id) => deleteTaskMutation.mutate(id)}
                       onBreakdown={handleBreakdownTask}
                     />
@@ -182,8 +204,12 @@ export default function Upcoming() {
 
       <TaskCreationModal
         open={showTaskModal}
-        onOpenChange={setShowTaskModal}
-        onSubmit={handleCreateTask}
+        onOpenChange={(open) => {
+          setShowTaskModal(open);
+          if (!open) setEditingTask(null);
+        }}
+        onSubmit={handleUpdateTask}
+        initialTask={editingTask}
       />
     </>
   );
