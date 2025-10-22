@@ -2,8 +2,35 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let errorMessage = res.statusText;
+    
+    try {
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const errorData = await res.json();
+        
+        // Handle Zod validation errors (array format)
+        if (errorData.error && Array.isArray(errorData.error)) {
+          const messages = errorData.error.map((err: any) => err.message).join(", ");
+          errorMessage = messages || "Validation error";
+        }
+        // Handle simple error message (string format)
+        else if (errorData.error && typeof errorData.error === "string") {
+          errorMessage = errorData.error;
+        }
+        // Handle error with message property
+        else if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } else {
+        errorMessage = (await res.text()) || res.statusText;
+      }
+    } catch (e) {
+      // If parsing fails, use status text
+      errorMessage = res.statusText;
+    }
+    
+    throw new Error(errorMessage);
   }
 }
 
