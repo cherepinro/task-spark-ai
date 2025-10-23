@@ -26,6 +26,20 @@ export default function Settings() {
       const res = await apiRequest("PATCH", "/api/settings", updates);
       return res.json();
     },
+    onMutate: async (updates) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/settings"] });
+      const previousSettings = queryClient.getQueryData<UserSettings>(["/api/settings"]);
+      queryClient.setQueryData<UserSettings>(["/api/settings"], (old) => ({
+        ...old!,
+        ...updates,
+      }));
+      return { previousSettings };
+    },
+    onError: (_error, _updates, context) => {
+      if (context?.previousSettings) {
+        queryClient.setQueryData(["/api/settings"], context.previousSettings);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       toast({
