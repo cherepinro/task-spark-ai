@@ -70,6 +70,35 @@ An independent FastAPI-based ML microservice calculates a user's procrastination
 - `server/services/data-cache.service.ts`
 - `server/routes.ts` (all project/insight/template endpoints)
 
+### Usage Statistics User Isolation Bug
+**Date**: October 23, 2025  
+**Severity**: CRITICAL - Data Leakage Between Users
+
+**Bug**: Task and project count queries were counting ALL tasks/projects across ALL users instead of filtering by userId. This resulted in:
+- User A seeing total task/project counts from all users (not just their own)
+- Incorrect usage statistics and limits
+- Privacy violation showing aggregate statistics across users
+
+**Root Cause**: In `server/services/usage-tracker.service.ts`, the count queries were missing userId filter:
+```typescript
+// BEFORE (Broken)
+db.select({ count: count() }).from(tasks)
+db.select({ count: count() }).from(projects)
+```
+
+**Fix Applied**:
+```typescript
+// AFTER (Fixed)
+db.select({ count: count() }).from(tasks).where(eq(tasks.userId, userId))
+db.select({ count: count() }).from(projects).where(eq(projects.userId, userId))
+```
+
+Additionally, the `/api/usage` endpoint was not passing `userId` to `getAllUsage()` function.
+
+**Files Modified**:
+- `server/services/usage-tracker.service.ts`
+- `server/routes.ts` (GET /api/usage endpoint)
+
 ### Schema Validation Fix
 **Critical Bug Fixed**: All insert schemas were incorrectly requiring `userId` in the request body. This prevented task/project creation as the client couldn't pass validation. **Solution**: All insert schemas now omit `userId` field - the server extracts it from the authenticated session and adds it after validation.
 
