@@ -56,6 +56,10 @@ export const tasks = pgTable("tasks", {
   
   // Task decomposition fields
   hours: numeric("hours", { precision: 5, scale: 2 }),
+  
+  // Reminder fields
+  enableReminder: boolean("enable_reminder").default(false),
+  reminderHoursBefore: integer("reminder_hours_before").default(1),
 });
 
 export const projects = pgTable("projects", {
