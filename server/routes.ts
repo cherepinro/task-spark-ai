@@ -181,8 +181,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/tasks", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      // Check task limit
-      const taskUsage = await checkUsage('tasks');
+      const userId = req.user!.id;
+      
+      // Check task limit (per user)
+      const taskUsage = await checkUsage('tasks', userId);
       if (!taskUsage.allowed) {
         return res.status(429).json({ 
           error: `Task limit reached. You have created ${taskUsage.limit} tasks (maximum allowed). Please delete some tasks to create new ones.`,
@@ -192,7 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const validatedData = insertTaskSchema.parse(req.body);
-      const task = await storage.createTask({ ...validatedData, userId: req.user!.id });
+      const task = await storage.createTask({ ...validatedData, userId });
       
       // Invalidate tasks cache
       dataCacheService.invalidateTasks();
@@ -210,8 +212,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/tasks/bulk-import", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      // Check usage limit
-      const usageCheck = await checkUsage('bulk_import');
+      const userId = req.user!.id;
+      
+      // Check usage limit (per user)
+      const usageCheck = await checkUsage('bulk_import', userId);
       if (!usageCheck.allowed) {
         return res.status(429).json({ 
           error: `Bulk import limit reached. You can import ${usageCheck.limit} checklists per month. Resets next month.`,
@@ -233,8 +237,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No valid tasks found in checklist" });
       }
 
-      // Check if importing would exceed task limit
-      const taskUsage = await checkUsage('tasks');
+      // Check if importing would exceed task limit (per user)
+      const taskUsage = await checkUsage('tasks', userId);
       if (taskUsage.used + parsedTasks.length > taskUsage.limit) {
         return res.status(429).json({
           error: `Task limit would be exceeded. You have ${taskUsage.remaining} tasks remaining out of ${taskUsage.limit} total.`,
@@ -247,7 +251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const createdTasks = await Promise.all(
         parsedTasks.map(async (item) => {
           return await storage.createTask({
-            userId: req.user!.id,
+            userId,
             title: item.title,
             priority: priority as "low" | "medium" | "high",
             status: "todo",
@@ -257,8 +261,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
 
-      // Increment usage counter
-      await incrementUsage('bulk_import');
+      // Increment usage counter (per user)
+      await incrementUsage('bulk_import', userId);
 
       // Invalidate tasks cache
       dataCacheService.invalidateTasks();
@@ -436,8 +440,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/projects", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      // Check project limit
-      const projectUsage = await checkUsage('projects');
+      const userId = req.user!.id;
+      
+      // Check project limit (per user)
+      const projectUsage = await checkUsage('projects', userId);
       if (!projectUsage.allowed) {
         return res.status(429).json({ 
           error: `Project limit reached. You have created ${projectUsage.limit} projects (maximum allowed). Please delete some projects to create new ones.`,
@@ -447,7 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const validatedData = insertProjectSchema.parse(req.body);
-      const project = await storage.createProject({ ...validatedData, userId: req.user!.id });
+      const project = await storage.createProject({ ...validatedData, userId });
       
       // Invalidate projects cache
       dataCacheService.invalidateProjects();
@@ -1029,7 +1035,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Task Template routes
-  app.get("/api/templates", isAuthenticated, async (_req: Request, res: Response) => {
+  app.get("/api/templates", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Try cache first
       const cached = dataCacheService.getTemplates();
