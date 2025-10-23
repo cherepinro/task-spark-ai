@@ -24,6 +24,7 @@ export interface TaskFilters {
   priority?: string;
   status?: string;
   projectId?: string;
+  userId?: string;
 }
 
 export const dataCacheService = {

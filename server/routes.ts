@@ -147,6 +147,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         priority: req.query.priority as string | undefined,
         status: req.query.status as string | undefined,
         projectId: req.query.projectId as string | undefined,
+        userId: req.user!.id, // CRITICAL: Filter by authenticated user's ID
       };
       
       // Try to get from cache first
@@ -400,7 +401,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Project routes
-  app.get("/api/projects", isAuthenticated, async (_req: Request, res: Response) => {
+  app.get("/api/projects", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Try cache first
       const cached = dataCacheService.getProjects();
@@ -410,7 +411,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Cache miss
-      const projects = await storage.getAllProjects();
+      const projects = await storage.getAllProjects(req.user!.id);
       dataCacheService.setProjects(projects);
       res.setHeader('X-Cache', 'MISS');
       res.json(projects);
@@ -495,7 +496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Insights routes
-  app.get("/api/insights", async (_req: Request, res: Response) => {
+  app.get("/api/insights", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Try cache first
       const cached = dataCacheService.getInsights();
@@ -505,7 +506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Cache miss
-      const insights = await storage.getAllInsights();
+      const insights = await storage.getAllInsights(req.user!.id);
       dataCacheService.setInsights(insights);
       res.setHeader('X-Cache', 'MISS');
       res.json(insights);
@@ -1032,7 +1033,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Cache miss
-      const templates = await storage.getAllTemplates();
+      const templates = await storage.getAllTemplates(req.user!.id);
       dataCacheService.setTemplates(templates);
       res.setHeader('X-Cache', 'MISS');
       res.json(templates);

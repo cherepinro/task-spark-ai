@@ -33,6 +33,7 @@ export const users = pgTable("users", {
 
 export const tasks = pgTable("tasks", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().default("default"),
   title: text("title").notNull(),
   description: text("description"),
   priority: varchar("priority", { length: 10 }).notNull().default("medium"),
@@ -59,6 +60,7 @@ export const tasks = pgTable("tasks", {
 
 export const projects = pgTable("projects", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().default("default"),
   name: text("name").notNull(),
   color: varchar("color", { length: 20 }).default("purple"),
   createdAt: timestamp("created_at", { mode: "date" }).notNull().default(sql`now()`),
@@ -66,6 +68,7 @@ export const projects = pgTable("projects", {
 
 export const aiInsights = pgTable("ai_insights", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().default("default"),
   type: varchar("type", { length: 50 }).notNull(),
   title: text("title").notNull(),
   description: text("description").notNull(),
@@ -75,6 +78,7 @@ export const aiInsights = pgTable("ai_insights", {
 
 export const taskTemplates = pgTable("task_templates", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().default("default"),
   name: text("name").notNull(),
   title: text("title").notNull(),
   description: text("description"),

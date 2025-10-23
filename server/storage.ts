@@ -32,6 +32,7 @@ export interface TaskFilters {
   priority?: string;
   status?: string;
   projectId?: string;
+  userId?: string;
 }
 
 export interface IStorage {
@@ -56,18 +57,18 @@ export interface IStorage {
   deleteTask(id: string): Promise<boolean>;
 
   // Project operations
-  getAllProjects(): Promise<Project[]>;
+  getAllProjects(userId?: string): Promise<Project[]>;
   getProject(id: string): Promise<Project | undefined>;
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: string, project: Partial<InsertProject>): Promise<Project | undefined>;
   deleteProject(id: string): Promise<boolean>;
 
   // AI Insight operations
-  getAllInsights(): Promise<AIInsight[]>;
+  getAllInsights(userId?: string): Promise<AIInsight[]>;
   createInsight(insight: InsertAIInsight): Promise<AIInsight>;
 
   // Task Template operations
-  getAllTemplates(): Promise<TaskTemplate[]>;
+  getAllTemplates(userId?: string): Promise<TaskTemplate[]>;
   getTemplate(id: string): Promise<TaskTemplate | undefined>;
   createTemplate(template: InsertTaskTemplate): Promise<TaskTemplate>;
   updateTemplate(id: string, template: Partial<InsertTaskTemplate>): Promise<TaskTemplate | undefined>;
@@ -206,6 +207,11 @@ export class DatabaseStorage implements IStorage {
   async getAllTasks(filters?: TaskFilters): Promise<Task[]> {
     const conditions = [];
     
+    // CRITICAL: Always filter by userId for user isolation
+    if (filters?.userId) {
+      conditions.push(eq(tasks.userId, filters.userId));
+    }
+    
     if (filters?.search) {
       conditions.push(
         or(
@@ -271,7 +277,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Project operations
-  async getAllProjects(): Promise<Project[]> {
+  async getAllProjects(userId?: string): Promise<Project[]> {
+    if (userId) {
+      return await db.select().from(projects).where(eq(projects.userId, userId)).orderBy(desc(projects.createdAt));
+    }
     return await db.select().from(projects).orderBy(desc(projects.createdAt));
   }
 
@@ -300,7 +309,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // AI Insight operations
-  async getAllInsights(): Promise<AIInsight[]> {
+  async getAllInsights(userId?: string): Promise<AIInsight[]> {
+    if (userId) {
+      return await db.select().from(aiInsights).where(eq(aiInsights.userId, userId)).orderBy(desc(aiInsights.createdAt));
+    }
     return await db.select().from(aiInsights).orderBy(desc(aiInsights.createdAt));
   }
 
@@ -310,7 +322,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Task Template operations
-  async getAllTemplates(): Promise<TaskTemplate[]> {
+  async getAllTemplates(userId?: string): Promise<TaskTemplate[]> {
+    if (userId) {
+      return await db.select().from(taskTemplates).where(eq(taskTemplates.userId, userId)).orderBy(desc(taskTemplates.createdAt));
+    }
     return await db.select().from(taskTemplates).orderBy(desc(taskTemplates.createdAt));
   }
 
