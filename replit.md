@@ -44,6 +44,32 @@ An independent FastAPI-based ML microservice calculates a user's procrastination
 
 ## Recent Fixes & Architecture Decisions (Oct 2025)
 
+### Cache Key User Isolation Bug (CRITICAL SECURITY FIX)
+**Date**: October 23, 2025  
+**Severity**: CRITICAL - Data Leakage Between Users
+
+**Bug**: Server-side cache keys for projects, insights, and templates did not include `userId`, causing all users to share the same cached data. This resulted in:
+- User A seeing User B's projects/insights/templates
+- Empty production database showing cached data from other users
+- Severe data privacy violation
+
+**Root Cause**: Cache key generation in `server/services/data-cache.service.ts` used global keys like `data:projects:all` instead of per-user keys like `data:projects:{userId}:all`.
+
+**Fix Applied**:
+1. Updated `generateProjectsKey()`, `generateInsightsKey()`, `generateTemplatesKey()` to require `userId` parameter
+2. Updated all cache getter/setter methods to accept `userId`
+3. Updated all route handlers to pass `userId` when caching/retrieving data
+4. Updated cache invalidation to be user-specific
+
+**Production Cleanup Required**:
+- Clear all caches via `POST /api/cache/clear` endpoint immediately after deployment
+- This will remove contaminated cross-user cached data
+- Caches will rebuild correctly with user isolation
+
+**Files Modified**:
+- `server/services/data-cache.service.ts`
+- `server/routes.ts` (all project/insight/template endpoints)
+
 ### Schema Validation Fix
 **Critical Bug Fixed**: All insert schemas were incorrectly requiring `userId` in the request body. This prevented task/project creation as the client couldn't pass validation. **Solution**: All insert schemas now omit `userId` field - the server extracts it from the authenticated session and adds it after validation.
 
