@@ -48,11 +48,11 @@ class NotificationService {
     try {
       const now = new Date();
 
-      // Get all incomplete tasks that have reminders enabled
+      // Get all incomplete tasks
       const allTasks = await storage.getAllTasks({ status: 'todo' });
       const tasksToNotify = allTasks.filter(task => {
-        // Skip if task is completed, archived, or reminder is disabled
-        if (task.status === 'completed' || task.status === 'archived' || !task.enableReminder) {
+        // Skip if task is completed or archived
+        if (task.status === 'completed' || task.status === 'archived') {
           return false;
         }
 
@@ -63,15 +63,11 @@ class NotificationService {
         }
 
         const deadlineDate = new Date(deadline);
-        const reminderHours = task.reminderHoursBefore || 1;
-        const reminderTime = new Date(deadlineDate.getTime() - reminderHours * 60 * 60 * 1000);
-
-        // Send notification if current time is past the reminder time and before the deadline
-        // Add a 5-minute window to avoid missing notifications
-        const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
-        const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
         
-        return reminderTime >= fiveMinutesAgo && reminderTime <= fiveMinutesFromNow;
+        // Send notification if task is due soon (within next hour)
+        const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+        
+        return deadlineDate <= oneHourFromNow && deadlineDate > now;
       });
 
       if (tasksToNotify.length === 0) {
@@ -79,7 +75,7 @@ class NotificationService {
         return;
       }
 
-      logger.info('Sending reminder notifications', { count: tasksToNotify.length });
+      logger.info('Sending due task notifications', { count: tasksToNotify.length });
 
       // Send notification for each task
       for (const task of tasksToNotify) {
