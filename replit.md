@@ -41,3 +41,23 @@ An independent FastAPI-based ML microservice calculates a user's procrastination
 - **Authentication**: Firebase Google OAuth
 - **Internationalization**: `react-i18next`
 - **Drag and Drop**: `@hello-pangea/dnd`
+
+## Recent Fixes & Architecture Decisions (Oct 2025)
+
+### Schema Validation Fix
+**Critical Bug Fixed**: All insert schemas were incorrectly requiring `userId` in the request body. This prevented task/project creation as the client couldn't pass validation. **Solution**: All insert schemas now omit `userId` field - the server extracts it from the authenticated session and adds it after validation.
+
+Affected schemas:
+- `insertTaskSchema`
+- `insertProjectSchema`
+- `insertAIInsightSchema`
+- `insertTaskTemplateSchema`
+- `insertUserSettingsSchema`
+- `insertUserStatsSchema`
+- `insertPushTokenSchema`
+
+### Reminder Feature Removal
+The per-task reminder feature (`enable_reminder`, `reminder_hours_before` fields) was completely removed from the codebase due to production deployment issues. The application now uses simple deadline-based notifications (tasks due within 1 hour trigger push notifications). Development database columns have been dropped; production database may still contain these columns and requires manual cleanup.
+
+### Admin Access
+Admin access configured for `cherepin.roman@yandex.ru` in development. Production database requires manual update to grant admin role.
