@@ -64,10 +64,18 @@ class NotificationService {
 
         const deadlineDate = new Date(deadline);
         
-        // Send notification if task is due soon (within next hour)
-        const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+        // Determine notification window based on per-task settings
+        let hoursBeforeDeadline = 1; // Default: 1 hour before deadline
         
-        return deadlineDate <= oneHourFromNow && deadlineDate > now;
+        // If task has custom reminder settings enabled, use them
+        if (task.enableReminder === true && task.reminderHoursBefore && task.reminderHoursBefore > 0) {
+          hoursBeforeDeadline = task.reminderHoursBefore;
+        }
+        
+        const notificationTime = new Date(deadlineDate.getTime() - hoursBeforeDeadline * 60 * 60 * 1000);
+        
+        // Send notification if current time is past the notification time but before deadline
+        return now >= notificationTime && now < deadlineDate;
       });
 
       if (tasksToNotify.length === 0) {
