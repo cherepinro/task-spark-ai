@@ -593,7 +593,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const history: ChatMessage[] = conversationHistory || [];
-      const tasks = await storage.getAllTasks();
+      const tasks = await storage.getAllTasks({ userId });
       
       const response = await chatWithAI(message, history, tasks);
       
@@ -704,8 +704,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Tasks array is required" });
       }
 
-      // Fetch full task details from database
-      const allTasks = await storage.getAllTasks();
+      // Fetch full task details from database (only user's tasks)
+      const allTasks = await storage.getAllTasks({ userId });
       const taskMap = new Map(allTasks.map(t => [t.id, t]));
       
       const validTasks = tasks
@@ -762,8 +762,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "taskIds array is required and must not be empty" });
       }
 
-      // Fetch all tasks
-      const allTasks = await storage.getAllTasks();
+      // Fetch all tasks (only user's tasks)
+      const allTasks = await storage.getAllTasks({ userId });
       const taskMap = new Map(allTasks.map(t => [t.id, t]));
       
       const selectedTasks = taskIds
@@ -862,10 +862,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Procrastination Score ML endpoint
-  app.get("/api/ml/procrastination-score", async (_req: Request, res: Response) => {
+  app.get("/api/ml/procrastination-score", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      // Check cache first (1 hour TTL)
-      const cacheKey = 'ml:procrastination-score';
+      const userId = req.user!.id;
+      
+      // Check cache first (1 hour TTL) - per user
+      const cacheKey = `ml:procrastination-score:${userId}`;
       const cached = cacheService.get<{ score: number; level: string; confidence: number; calculatedAt: string }>(cacheKey);
       
       if (cached) {
@@ -873,8 +875,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ ...cached, fromCache: true });
       }
 
-      // Fetch all tasks for feature calculation
-      const allTasks = await storage.getAllTasks();
+      // Fetch all tasks for feature calculation (only user's tasks)
+      const allTasks = await storage.getAllTasks({ userId });
       const stats = await storage.getUserStats();
       
       // Calculate 10 features for ML model

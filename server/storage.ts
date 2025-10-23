@@ -57,18 +57,18 @@ export interface IStorage {
   deleteTask(id: string): Promise<boolean>;
 
   // Project operations
-  getAllProjects(userId?: string): Promise<Project[]>;
+  getAllProjects(userId: string): Promise<Project[]>;
   getProject(id: string): Promise<Project | undefined>;
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: string, project: Partial<InsertProject>): Promise<Project | undefined>;
   deleteProject(id: string): Promise<boolean>;
 
   // AI Insight operations
-  getAllInsights(userId?: string): Promise<AIInsight[]>;
+  getAllInsights(userId: string): Promise<AIInsight[]>;
   createInsight(insight: InsertAIInsight): Promise<AIInsight>;
 
   // Task Template operations
-  getAllTemplates(userId?: string): Promise<TaskTemplate[]>;
+  getAllTemplates(userId: string): Promise<TaskTemplate[]>;
   getTemplate(id: string): Promise<TaskTemplate | undefined>;
   createTemplate(template: InsertTaskTemplate): Promise<TaskTemplate>;
   updateTemplate(id: string, template: Partial<InsertTaskTemplate>): Promise<TaskTemplate | undefined>;
@@ -277,11 +277,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Project operations
-  async getAllProjects(userId?: string): Promise<Project[]> {
-    if (userId) {
-      return await db.select().from(projects).where(eq(projects.userId, userId)).orderBy(desc(projects.createdAt));
-    }
-    return await db.select().from(projects).orderBy(desc(projects.createdAt));
+  async getAllProjects(userId: string): Promise<Project[]> {
+    return await db.select().from(projects).where(eq(projects.userId, userId)).orderBy(desc(projects.createdAt));
   }
 
   async getProject(id: string): Promise<Project | undefined> {
@@ -309,11 +306,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   // AI Insight operations
-  async getAllInsights(userId?: string): Promise<AIInsight[]> {
-    if (userId) {
-      return await db.select().from(aiInsights).where(eq(aiInsights.userId, userId)).orderBy(desc(aiInsights.createdAt));
-    }
-    return await db.select().from(aiInsights).orderBy(desc(aiInsights.createdAt));
+  async getAllInsights(userId: string): Promise<AIInsight[]> {
+    return await db.select().from(aiInsights).where(eq(aiInsights.userId, userId)).orderBy(desc(aiInsights.createdAt));
   }
 
   async createInsight(insertInsight: InsertAIInsight): Promise<AIInsight> {
@@ -322,11 +316,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Task Template operations
-  async getAllTemplates(userId?: string): Promise<TaskTemplate[]> {
-    if (userId) {
-      return await db.select().from(taskTemplates).where(eq(taskTemplates.userId, userId)).orderBy(desc(taskTemplates.createdAt));
-    }
-    return await db.select().from(taskTemplates).orderBy(desc(taskTemplates.createdAt));
+  async getAllTemplates(userId: string): Promise<TaskTemplate[]> {
+    return await db.select().from(taskTemplates).where(eq(taskTemplates.userId, userId)).orderBy(desc(taskTemplates.createdAt));
   }
 
   async getTemplate(id: string): Promise<TaskTemplate | undefined> {
