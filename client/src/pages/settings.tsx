@@ -83,39 +83,6 @@ export default function Settings() {
               <LanguageSwitcher />
             </CardContent>
           </Card>
-          {/* Push Notifications Settings */}
-          <Card data-testid="card-push-notifications-settings">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-primary" />
-                {t('settings.notifications')}
-              </CardTitle>
-              <CardDescription>
-                Control task reminders and push notifications on your devices
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <Label htmlFor="push-notifications-enabled" className="text-base">
-                    {t('settings.pushNotifications')}
-                  </Label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Receive reminders for tasks due soon and high-priority items
-                  </p>
-                </div>
-                <Switch
-                  id="push-notifications-enabled"
-                  checked={user?.pushNotificationsEnabled || false}
-                  onCheckedChange={(checked) => {
-                    updateUserPreferences.mutate({ pushNotificationsEnabled: checked });
-                  }}
-                  data-testid="switch-push-notifications-enabled"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Focus Sprint Settings */}
           <Card data-testid="card-focus-sprint-settings">
             <CardHeader>
