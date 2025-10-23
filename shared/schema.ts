@@ -33,7 +33,7 @@ export const users = pgTable("users", {
 
 export const tasks = pgTable("tasks", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().default("default"),
+  userId: varchar("user_id", { length: 255 }).notNull(),
   title: text("title").notNull(),
   description: text("description"),
   priority: varchar("priority", { length: 10 }).notNull().default("medium"),
@@ -60,7 +60,7 @@ export const tasks = pgTable("tasks", {
 
 export const projects = pgTable("projects", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().default("default"),
+  userId: varchar("user_id", { length: 255 }).notNull(),
   name: text("name").notNull(),
   color: varchar("color", { length: 20 }).default("purple"),
   createdAt: timestamp("created_at", { mode: "date" }).notNull().default(sql`now()`),
@@ -68,7 +68,7 @@ export const projects = pgTable("projects", {
 
 export const aiInsights = pgTable("ai_insights", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().default("default"),
+  userId: varchar("user_id", { length: 255 }).notNull(),
   type: varchar("type", { length: 50 }).notNull(),
   title: text("title").notNull(),
   description: text("description").notNull(),
@@ -78,7 +78,7 @@ export const aiInsights = pgTable("ai_insights", {
 
 export const taskTemplates = pgTable("task_templates", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().default("default"),
+  userId: varchar("user_id", { length: 255 }).notNull(),
   name: text("name").notNull(),
   title: text("title").notNull(),
   description: text("description"),
@@ -92,7 +92,7 @@ export const taskTemplates = pgTable("task_templates", {
 
 export const quotaUsage = pgTable("quota_usage", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().default("default"),
+  userId: varchar("user_id", { length: 255 }).notNull(),
   featureType: varchar("feature_type", { length: 50 }).notNull().default("ai_decompose"),
   month: varchar("month", { length: 10 }).notNull(), // Supports both YYYY-MM (7) and YYYY-MM-DD (10)
   callCount: integer("call_count").notNull().default(0),
@@ -102,7 +102,7 @@ export const quotaUsage = pgTable("quota_usage", {
 
 export const userSettings = pgTable("user_settings", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().default("default"),
+  userId: varchar("user_id", { length: 255 }).notNull(),
   focusSprintEnabled: boolean("focus_sprint_enabled").default(false),
   focusSprintSound: varchar("focus_sprint_sound", { length: 50 }).default("soft-chime"),
   createdAt: timestamp("created_at", { mode: "date" }).notNull().default(sql`now()`),
@@ -111,7 +111,7 @@ export const userSettings = pgTable("user_settings", {
 
 export const userStats = pgTable("user_stats", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().default("default"),
+  userId: varchar("user_id", { length: 255 }).notNull(),
   sprintsCompleted: integer("sprints_completed").notNull().default(0),
   lastReorganizeAt: timestamp("last_reorganize_at", { mode: "date" }),
   createdAt: timestamp("created_at", { mode: "date" }).notNull().default(sql`now()`),
@@ -120,7 +120,7 @@ export const userStats = pgTable("user_stats", {
 
 export const pushTokens = pgTable("push_tokens", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().default("default"),
+  userId: varchar("user_id", { length: 255 }).notNull(),
   token: text("token").notNull(),
   platform: varchar("platform", { length: 20 }).notNull(), // "android" or "ios"
   deviceId: text("device_id"),
