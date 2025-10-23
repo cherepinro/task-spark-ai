@@ -14,11 +14,11 @@ TaskSpark AI is an intelligent task management application available as a web an
 ## System Architecture
 TaskSpark AI utilizes a modern full-stack architecture. The frontend is built with React 18, TypeScript, Vite, Tailwind CSS, and Shadcn UI, enabling a native Android app via Capacitor 7.4+. State management uses TanStack Query (React Query v5), routing with Wouter, and form handling with React Hook Form + Zod. The backend is an Express.js + TypeScript application.
 
-Key features include a dynamic Dashboard, comprehensive Task Management (CRUD, search, filtering, recurring tasks, templates, deadline datetime, per-task push reminders), and advanced AI capabilities such as smart categorization, priority suggestions, natural language parsing, productivity insights, AI-optimized Day Planning, and AI Task Decomposition. The application also includes a "Focus Sprint" feature and robust usage tracking for AI functionalities.
+Key features include a dynamic Dashboard, comprehensive Task Management (CRUD, search, filtering, recurring tasks, templates, deadline datetime), and advanced AI capabilities such as smart categorization, priority suggestions, natural language parsing, productivity insights, AI-optimized Day Planning, and AI Task Decomposition. The application also includes a "Focus Sprint" feature and robust usage tracking for AI functionalities.
 
 The design system is based on a dark mode color palette with purple accents for AI features. Typography uses Inter and JetBrains Mono. Shadcn UI components are used with custom theming to achieve a Linear + Notion hybrid design aesthetic.
 
-Data models are defined for `Task`, `Project`, `AIInsight`, `TaskTemplate`, `UserSettings`, and `UserStats`, supporting features like recurrence, AI suggestions, per-task reminders (with customizable hours before deadline), and usage statistics.
+Data models are defined for `Task`, `Project`, `AIInsight`, `TaskTemplate`, `UserSettings`, and `UserStats`, supporting features like recurrence, AI suggestions, and usage statistics.
 
 The API provides endpoints for:
 - Task and Project management
@@ -29,7 +29,7 @@ The API provides endpoints for:
 - Cache management
 - Swagger API documentation
 
-User authentication supports both custom email/password (with bcrypt) and Firebase Google OAuth. Sessions are managed via PostgreSQL. Role-based access control protects AI and admin endpoints. Push notifications are implemented using Firebase Cloud Messaging (FCM) for Android, including deep linking and per-task reminders with customizable advance notification time (1 hour to 1 week before deadline). The application supports full internationalization with Russian as the primary language, using `react-i18next`.
+User authentication supports both custom email/password (with bcrypt) and Firebase Google OAuth. Sessions are managed via PostgreSQL. Role-based access control protects AI and admin endpoints. Push notifications are implemented using Firebase Cloud Messaging (FCM) for Android, including deep linking. Tasks due within the next hour trigger push notifications. The application supports full internationalization with Russian as the primary language, using `react-i18next`.
 
 An independent FastAPI-based ML microservice calculates a user's procrastination score, integrated into the Express backend and displayed in the React UI with personalized tips.
 
