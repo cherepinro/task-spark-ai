@@ -409,16 +409,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Project routes
   app.get("/api/projects", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
+      const userId = req.user!.id;
+      
       // Try cache first
-      const cached = dataCacheService.getProjects();
+      const cached = dataCacheService.getProjects(userId);
       if (cached) {
         res.setHeader('X-Cache', 'HIT');
         return res.json(cached);
       }
       
       // Cache miss
-      const projects = await storage.getAllProjects(req.user!.id);
-      dataCacheService.setProjects(projects);
+      const projects = await storage.getAllProjects(userId);
+      dataCacheService.setProjects(projects, userId);
       res.setHeader('X-Cache', 'MISS');
       res.json(projects);
     } catch (error) {
@@ -506,16 +508,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Insights routes
   app.get("/api/insights", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
+      const userId = req.user!.id;
+      
       // Try cache first
-      const cached = dataCacheService.getInsights();
+      const cached = dataCacheService.getInsights(userId);
       if (cached) {
         res.setHeader('X-Cache', 'HIT');
         return res.json(cached);
       }
       
       // Cache miss
-      const insights = await storage.getAllInsights(req.user!.id);
-      dataCacheService.setInsights(insights);
+      const insights = await storage.getAllInsights(userId);
+      dataCacheService.setInsights(insights, userId);
       res.setHeader('X-Cache', 'MISS');
       res.json(insights);
     } catch (error) {
@@ -556,12 +560,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate productivity insight
   app.post("/api/ai/generate-insight", isAuthenticated, requiresAIAccess, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const tasks = await storage.getAllTasks({ userId: req.user!.id });
+      const userId = req.user!.id;
+      const tasks = await storage.getAllTasks({ userId });
       const insight = await generateProductivityInsight(tasks);
 
       // Store the insight
       await storage.createInsight({
-        userId: req.user!.id,
+        userId,
         type: "productivity",
         title: insight.title,
         description: insight.description,
@@ -569,7 +574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Invalidate insights cache
-      dataCacheService.invalidateInsights();
+      dataCacheService.invalidateInsights(userId);
 
       res.json(insight);
     } catch (error) {
@@ -1037,16 +1042,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Task Template routes
   app.get("/api/templates", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
+      const userId = req.user!.id;
+      
       // Try cache first
-      const cached = dataCacheService.getTemplates();
+      const cached = dataCacheService.getTemplates(userId);
       if (cached) {
         res.setHeader('X-Cache', 'HIT');
         return res.json(cached);
       }
       
       // Cache miss
-      const templates = await storage.getAllTemplates(req.user!.id);
-      dataCacheService.setTemplates(templates);
+      const templates = await storage.getAllTemplates(userId);
+      dataCacheService.setTemplates(templates, userId);
       res.setHeader('X-Cache', 'MISS');
       res.json(templates);
     } catch (error) {
@@ -1068,11 +1075,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/templates", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
+      const userId = req.user!.id;
       const validatedData = insertTaskTemplateSchema.parse(req.body);
-      const template = await storage.createTemplate({ ...validatedData, userId: req.user!.id });
+      const template = await storage.createTemplate({ ...validatedData, userId });
       
       // Invalidate templates cache
-      dataCacheService.invalidateTemplates();
+      dataCacheService.invalidateTemplates(userId);
       
       res.status(201).json(template);
     } catch (error) {
@@ -1083,8 +1091,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/templates/:id", isAuthenticated, async (req: Request, res: Response) => {
+  app.patch("/api/templates/:id", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
+      const userId = req.user!.id;
       const validatedData = insertTaskTemplateSchema.partial().parse(req.body);
       const template = await storage.updateTemplate(req.params.id, validatedData);
       if (!template) {
@@ -1092,7 +1101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Invalidate templates cache
-      dataCacheService.invalidateTemplates();
+      dataCacheService.invalidateTemplates(userId);
       
       res.json(template);
     } catch (error) {
@@ -1103,15 +1112,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/templates/:id", isAuthenticated, async (req: Request, res: Response) => {
+  app.delete("/api/templates/:id", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
+      const userId = req.user!.id;
       const success = await storage.deleteTemplate(req.params.id);
       if (!success) {
         return res.status(404).json({ error: "Template not found" });
       }
       
       // Invalidate templates cache
-      dataCacheService.invalidateTemplates();
+      dataCacheService.invalidateTemplates(userId);
       
       res.status(204).send();
     } catch (error) {
