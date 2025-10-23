@@ -6,8 +6,8 @@ import type { Task } from '@shared/schema';
 class NotificationService {
   async sendTaskDueNotification(task: Task): Promise<void> {
     try {
-      // Get all push tokens for the user (using default since we don't have multi-user auth)
-      const tokens = await storage.getAllPushTokens('default');
+      // Get all push tokens for the user
+      const tokens = await storage.getAllPushTokens(task.userId);
       
       if (tokens.length === 0) {
         logger.debug('No push tokens found for user', { taskId: task.id });
@@ -47,27 +47,42 @@ class NotificationService {
   async checkAndSendDueTaskNotifications(): Promise<void> {
     try {
       const now = new Date();
-      const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
 
-      // Get all tasks due in the next hour that haven't been completed
+      // Get all incomplete tasks that have reminders enabled
       const allTasks = await storage.getAllTasks({ status: 'todo' });
-      const dueSoonTasks = allTasks.filter(task => {
-        if (!task.dueDate || task.status === 'completed' || task.status === 'archived') {
+      const tasksToNotify = allTasks.filter(task => {
+        // Skip if task is completed, archived, or reminder is disabled
+        if (task.status === 'completed' || task.status === 'archived' || !task.enableReminder) {
           return false;
         }
-        const dueDate = new Date(task.dueDate);
-        return dueDate >= now && dueDate <= oneHourFromNow;
+
+        // Determine the deadline (prefer deadlineDateTime, fallback to dueDate)
+        const deadline = task.deadlineDateTime || task.dueDate;
+        if (!deadline) {
+          return false;
+        }
+
+        const deadlineDate = new Date(deadline);
+        const reminderHours = task.reminderHoursBefore || 1;
+        const reminderTime = new Date(deadlineDate.getTime() - reminderHours * 60 * 60 * 1000);
+
+        // Send notification if current time is past the reminder time and before the deadline
+        // Add a 5-minute window to avoid missing notifications
+        const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+        const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
+        
+        return reminderTime >= fiveMinutesAgo && reminderTime <= fiveMinutesFromNow;
       });
 
-      if (dueSoonTasks.length === 0) {
-        logger.debug('No tasks due soon');
+      if (tasksToNotify.length === 0) {
+        logger.debug('No tasks to notify');
         return;
       }
 
-      logger.info('Sending notifications for due tasks', { count: dueSoonTasks.length });
+      logger.info('Sending reminder notifications', { count: tasksToNotify.length });
 
-      // Send notification for each due task
-      for (const task of dueSoonTasks) {
+      // Send notification for each task
+      for (const task of tasksToNotify) {
         await this.sendTaskDueNotification(task);
       }
     } catch (error) {
