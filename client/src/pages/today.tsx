@@ -147,9 +147,16 @@ export default function Today() {
 
   const today = new Date();
   const todayTasks = tasks?.filter((t) => {
-    if (!t.dueDate) return false;
-    const dueDate = new Date(t.dueDate);
-    return dueDate.toDateString() === today.toDateString();
+    // Check both dueDate and deadlineDateTime
+    if (t.dueDate) {
+      const dueDate = new Date(t.dueDate);
+      if (dueDate.toDateString() === today.toDateString()) return true;
+    }
+    if (t.deadlineDateTime) {
+      const deadlineDate = new Date(t.deadlineDateTime);
+      if (deadlineDate.toDateString() === today.toDateString()) return true;
+    }
+    return false;
   }) || [];
 
   return (
