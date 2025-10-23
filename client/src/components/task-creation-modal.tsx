@@ -118,9 +118,15 @@ export function TaskCreationModal({
   }, [initialTask, form]);
 
   const handleSubmit = async (data: InsertTask) => {
-    await onSubmit(data);
-    form.reset();
-    onOpenChange(false);
+    console.log("Form submitting with data:", data);
+    console.log("Form errors:", form.formState.errors);
+    try {
+      await onSubmit(data);
+      form.reset();
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Submit error:", error);
+    }
   };
 
   // Watch isRecurring and clear dueDate when it's turned off

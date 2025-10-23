@@ -150,6 +150,7 @@ export const taskTemplatesRelations = relations(taskTemplates, ({ one }) => ({
 
 const baseTaskSchema = createInsertSchema(tasks).omit({
   id: true,
+  userId: true,
   createdAt: true,
 }).extend({
   title: z.string().min(1, "Title is required"),
@@ -181,6 +182,7 @@ export const updateTaskSchema = baseTaskSchema.partial();
 
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
+  userId: true,
   createdAt: true,
 }).extend({
   name: z.string().min(1, "Project name is required"),
@@ -188,11 +190,13 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
 
 export const insertAIInsightSchema = createInsertSchema(aiInsights).omit({
   id: true,
+  userId: true,
   createdAt: true,
 });
 
 export const insertTaskTemplateSchema = createInsertSchema(taskTemplates).omit({
   id: true,
+  userId: true,
   createdAt: true,
 }).extend({
   name: z.string().min(1, "Template name is required"),
@@ -204,6 +208,7 @@ export const insertTaskTemplateSchema = createInsertSchema(taskTemplates).omit({
 
 export const insertUserSettingsSchema = createInsertSchema(userSettings).omit({
   id: true,
+  userId: true,
   createdAt: true,
   updatedAt: true,
 }).extend({
@@ -212,12 +217,14 @@ export const insertUserSettingsSchema = createInsertSchema(userSettings).omit({
 
 export const insertUserStatsSchema = createInsertSchema(userStats).omit({
   id: true,
+  userId: true,
   createdAt: true,
   updatedAt: true,
 });
 
 export const insertPushTokenSchema = createInsertSchema(pushTokens).omit({
   id: true,
+  userId: true,
   createdAt: true,
   updatedAt: true,
 }).extend({
