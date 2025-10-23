@@ -132,17 +132,31 @@ export default function Upcoming() {
   }
 
   const upcomingTasks = tasks?.filter((t) => {
-    if (!t.dueDate || t.status === "completed" || t.status === "archived") return false;
-    const dueDate = new Date(t.dueDate);
-    return isAfter(dueDate, startOfToday());
+    if (t.status === "completed" || t.status === "archived") return false;
+    
+    // Check both dueDate and deadlineDateTime for upcoming tasks
+    let taskDate: Date | null = null;
+    if (t.dueDate) {
+      taskDate = new Date(t.dueDate);
+    } else if (t.deadlineDateTime) {
+      taskDate = new Date(t.deadlineDateTime);
+    }
+    
+    if (!taskDate) return false;
+    return isAfter(taskDate, startOfToday());
   }).sort((a, b) => {
-    if (!a.dueDate || !b.dueDate) return 0;
-    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    // Sort by whichever date is available (dueDate or deadlineDateTime)
+    const dateA = a.dueDate ? new Date(a.dueDate) : a.deadlineDateTime ? new Date(a.deadlineDateTime) : null;
+    const dateB = b.dueDate ? new Date(b.dueDate) : b.deadlineDateTime ? new Date(b.deadlineDateTime) : null;
+    if (!dateA || !dateB) return 0;
+    return dateA.getTime() - dateB.getTime();
   }) || [];
 
   const groupedTasks = upcomingTasks.reduce((acc, task) => {
-    if (!task.dueDate) return acc;
-    const dateKey = format(new Date(task.dueDate), "yyyy-MM-dd");
+    // Use whichever date is available for grouping
+    const taskDate = task.dueDate ? new Date(task.dueDate) : task.deadlineDateTime ? new Date(task.deadlineDateTime) : null;
+    if (!taskDate) return acc;
+    const dateKey = format(taskDate, "yyyy-MM-dd");
     if (!acc[dateKey]) {
       acc[dateKey] = [];
     }

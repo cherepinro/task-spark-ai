@@ -163,7 +163,7 @@ export default function Today() {
     <>
       {showFocusSprint && (
         <FocusSprint
-          sound={settings?.focusSprintSound || "soft-chime"}
+          sound={(settings?.focusSprintSound as "soft-chime" | "white-noise" | "nature-sounds") || "soft-chime"}
           onClose={() => setShowFocusSprint(false)}
         />
       )}
