@@ -1,14 +1,35 @@
 import { useQuery } from "@tanstack/react-query";
-import { type AIInsight } from "@shared/schema";
+import { type AIInsight, type Task } from "@shared/schema";
 import { EmptyState } from "@/components/empty-state";
 import { TaskCardSkeleton } from "@/components/loading-state";
 import { Sparkles, TrendingUp, Brain, Target } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
 
+interface ProcrastinationScoreResponse {
+  score: number;
+  level: string;
+  confidence: number;
+  calculatedAt: string;
+  fromCache?: boolean;
+  fallback?: boolean;
+  error?: string;
+}
+
 export default function Insights() {
   const { data: insights, isLoading } = useQuery<AIInsight[]>({
     queryKey: ["/api/insights"],
+  });
+
+  const { data: tasks } = useQuery<Task[]>({
+    queryKey: ["/api/tasks"],
+  });
+
+  const { data: procrastinationScore } = useQuery<ProcrastinationScoreResponse>({
+    queryKey: ["/api/ml/procrastination-score"],
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    staleTime: 60 * 60 * 1000, // 1 hour
   });
 
   if (isLoading) {
@@ -50,7 +71,16 @@ export default function Insights() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Productivity Score</p>
-              <p className="text-lg font-semibold">8.5/10</p>
+              <p className="text-lg font-semibold" data-testid="text-productivity-score">
+                {procrastinationScore 
+                  ? `${(10 - (procrastinationScore.score / 10)).toFixed(1)}/10`
+                  : "—"}
+              </p>
+              {procrastinationScore && (
+                <p className="text-xs text-muted-foreground mt-1 capitalize">
+                  {procrastinationScore.level} procrastination
+                </p>
+              )}
             </div>
           </div>
         </Card>
@@ -61,7 +91,9 @@ export default function Insights() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Tasks Analyzed</p>
-              <p className="text-lg font-semibold">127</p>
+              <p className="text-lg font-semibold" data-testid="text-tasks-analyzed">
+                {tasks?.length ?? 0}
+              </p>
             </div>
           </div>
         </Card>
