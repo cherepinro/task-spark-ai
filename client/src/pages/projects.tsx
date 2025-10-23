@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { type Project, type InsertProject } from "@shared/schema";
+import { useLocation } from "wouter";
+import { type Project, type InsertProject, type Task } from "@shared/schema";
 import { EmptyState } from "@/components/empty-state";
 import { TaskCardSkeleton } from "@/components/loading-state";
 import { FolderKanban, Plus } from "lucide-react";
@@ -12,11 +13,20 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 
 export default function Projects() {
   const [showProjectModal, setShowProjectModal] = useState(false);
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
 
   const { data: projects, isLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
   });
+
+  const { data: tasks } = useQuery<Task[]>({
+    queryKey: ["/api/tasks"],
+  });
+
+  const getTaskCount = (projectId: string) => {
+    return tasks?.filter(task => task.projectId === projectId).length || 0;
+  };
 
   const createProjectMutation = useMutation({
     mutationFn: async (data: InsertProject) => {
@@ -75,19 +85,31 @@ export default function Projects() {
 
       {projects && projects.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project) => (
-            <Card key={project.id} className="p-4 hover-elevate cursor-pointer" data-testid={`card-project-${project.id}`}>
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <FolderKanban className="h-5 w-5 text-primary" />
+          {projects.map((project) => {
+            const taskCount = getTaskCount(project.id);
+            return (
+              <Card 
+                key={project.id} 
+                className="p-4 hover-elevate cursor-pointer" 
+                data-testid={`card-project-${project.id}`}
+                onClick={() => setLocation(`/projects/${project.id}`)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                    <FolderKanban className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-medium" data-testid={`text-project-name-${project.id}`}>
+                      {project.name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground" data-testid={`text-task-count-${project.id}`}>
+                      {taskCount} {taskCount === 1 ? 'task' : 'tasks'}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-medium">{project.name}</h3>
-                  <p className="text-xs text-muted-foreground">0 tasks</p>
-                </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       ) : (
         <EmptyState

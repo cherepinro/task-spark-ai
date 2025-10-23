@@ -59,6 +59,7 @@ export interface IStorage {
   getAllProjects(): Promise<Project[]>;
   getProject(id: string): Promise<Project | undefined>;
   createProject(project: InsertProject): Promise<Project>;
+  updateProject(id: string, project: Partial<InsertProject>): Promise<Project | undefined>;
   deleteProject(id: string): Promise<boolean>;
 
   // AI Insight operations
@@ -282,6 +283,15 @@ export class DatabaseStorage implements IStorage {
   async createProject(insertProject: InsertProject): Promise<Project> {
     const [project] = await db.insert(projects).values(insertProject).returning();
     return project;
+  }
+
+  async updateProject(id: string, updates: Partial<InsertProject>): Promise<Project | undefined> {
+    const [project] = await db.update(projects)
+      .set(updates)
+      .where(eq(projects.id, id))
+      .returning();
+    
+    return project || undefined;
   }
 
   async deleteProject(id: string): Promise<boolean> {

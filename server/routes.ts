@@ -419,6 +419,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/projects/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const project = await storage.getProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch project" });
+    }
+  });
+
   app.post("/api/projects", isAuthenticated, async (req: Request, res: Response) => {
     try {
       // Check project limit
@@ -443,6 +455,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: error.errors });
       }
       res.status(500).json({ error: "Failed to create project" });
+    }
+  });
+
+  app.patch("/api/projects/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const updates = insertProjectSchema.partial().parse(req.body);
+      const project = await storage.updateProject(req.params.id, updates);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      
+      // Invalidate projects cache
+      dataCacheService.invalidateProjects();
+      
+      res.json(project);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update project" });
     }
   });
 
