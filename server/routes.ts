@@ -192,7 +192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const validatedData = insertTaskSchema.parse(req.body);
-      const task = await storage.createTask(validatedData);
+      const task = await storage.createTask({ ...validatedData, userId: req.user!.id });
       
       // Invalidate tasks cache
       dataCacheService.invalidateTasks();
@@ -247,6 +247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const createdTasks = await Promise.all(
         parsedTasks.map(async (item) => {
           return await storage.createTask({
+            userId: req.user!.id,
             title: item.title,
             priority: priority as "low" | "medium" | "high",
             status: "todo",
@@ -350,6 +351,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (nextDate) {
           const nextTask: InsertTask = {
+            userId: task.userId,
             title: task.title,
             description: task.description || undefined,
             priority: task.priority as "low" | "medium" | "high",
@@ -432,7 +434,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/projects", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/projects", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Check project limit
       const projectUsage = await checkUsage('projects');
@@ -445,7 +447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const validatedData = insertProjectSchema.parse(req.body);
-      const project = await storage.createProject(validatedData);
+      const project = await storage.createProject({ ...validatedData, userId: req.user!.id });
       
       // Invalidate projects cache
       dataCacheService.invalidateProjects();
@@ -548,11 +550,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate productivity insight
   app.post("/api/ai/generate-insight", isAuthenticated, requiresAIAccess, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const tasks = await storage.getAllTasks();
+      const tasks = await storage.getAllTasks({ userId: req.user!.id });
       const insight = await generateProductivityInsight(tasks);
 
       // Store the insight
       await storage.createInsight({
+        userId: req.user!.id,
         type: "productivity",
         title: insight.title,
         description: insight.description,
@@ -644,6 +647,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const savedTasks = await Promise.all(
         result.tasks.map(async (task) => {
           return await storage.createTask({
+            userId: req.user!.id,
             title: task.title,
             priority: "medium",
             status: "todo",
@@ -1054,10 +1058,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/templates", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/templates", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const validatedData = insertTaskTemplateSchema.parse(req.body);
-      const template = await storage.createTemplate(validatedData);
+      const template = await storage.createTemplate({ ...validatedData, userId: req.user!.id });
       
       // Invalidate templates cache
       dataCacheService.invalidateTemplates();
@@ -1108,7 +1112,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create task from template
-  app.post("/api/templates/:id/create-task", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/templates/:id/create-task", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const template = await storage.getTemplate(req.params.id);
       if (!template) {
@@ -1118,6 +1122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create task from template, optionally overriding some fields
       const overrides = req.body || {};
       const taskData: InsertTask = {
+        userId: req.user!.id,
         title: overrides.title || template.title,
         description: overrides.description !== undefined ? overrides.description : template.description,
         priority: overrides.priority || template.priority,
