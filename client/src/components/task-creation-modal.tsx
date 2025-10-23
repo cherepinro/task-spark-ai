@@ -336,18 +336,69 @@ export function TaskCreationModal({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Deadline (Date & Time)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="datetime-local"
-                      value={field.value ? format(new Date(field.value), "yyyy-MM-dd'T'HH:mm") : ""}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        field.onChange(value ? new Date(value) : null);
-                      }}
-                      data-testid="input-deadline-datetime"
-                      className="w-full"
-                    />
-                  </FormControl>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                            data-testid="button-select-deadline-date"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value ? (
+                              format(new Date(field.value), "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value ? new Date(field.value) : undefined}
+                          onSelect={(date) => {
+                            if (date) {
+                              const currentTime = field.value ? new Date(field.value) : new Date();
+                              date.setHours(currentTime.getHours());
+                              date.setMinutes(currentTime.getMinutes());
+                              field.onChange(date);
+                            } else {
+                              field.onChange(null);
+                            }
+                          }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormControl>
+                      <Input
+                        type="time"
+                        value={field.value ? format(new Date(field.value), "HH:mm") : ""}
+                        onChange={(e) => {
+                          const timeValue = e.target.value;
+                          if (timeValue && field.value) {
+                            const date = new Date(field.value);
+                            const [hours, minutes] = timeValue.split(':');
+                            date.setHours(parseInt(hours), parseInt(minutes));
+                            field.onChange(date);
+                          } else if (timeValue && !field.value) {
+                            const date = new Date();
+                            const [hours, minutes] = timeValue.split(':');
+                            date.setHours(parseInt(hours), parseInt(minutes));
+                            field.onChange(date);
+                          }
+                        }}
+                        data-testid="input-deadline-time"
+                        className="w-full"
+                        placeholder="HH:mm"
+                      />
+                    </FormControl>
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     Optional: Set a specific deadline with time
                   </p>
