@@ -34,11 +34,11 @@ export const dataCacheService = {
     return `${CACHE_NAMESPACE.DATA_TASKS}:${key}`;
   },
 
-  generateProjectsKey: () => `${CACHE_NAMESPACE.DATA_PROJECTS}:all`,
+  generateProjectsKey: (userId: string) => `${CACHE_NAMESPACE.DATA_PROJECTS}:${userId}:all`,
   
-  generateInsightsKey: () => `${CACHE_NAMESPACE.DATA_INSIGHTS}:all`,
+  generateInsightsKey: (userId: string) => `${CACHE_NAMESPACE.DATA_INSIGHTS}:${userId}:all`,
   
-  generateTemplatesKey: () => `${CACHE_NAMESPACE.DATA_TEMPLATES}:all`,
+  generateTemplatesKey: (userId: string) => `${CACHE_NAMESPACE.DATA_TEMPLATES}:${userId}:all`,
 
   // Tasks caching
   getTasks: <T>(filters?: TaskFilters): T | undefined => {
@@ -57,12 +57,12 @@ export const dataCacheService = {
   },
 
   // Projects caching
-  getProjects: <T>(): T | undefined => {
-    return cacheService.get<T>(dataCacheService.generateProjectsKey());
+  getProjects: <T>(userId: string): T | undefined => {
+    return cacheService.get<T>(dataCacheService.generateProjectsKey(userId));
   },
 
-  setProjects: <T>(data: T): boolean => {
-    return cacheService.set(dataCacheService.generateProjectsKey(), data, CACHE_TTL.PROJECTS);
+  setProjects: <T>(data: T, userId: string): boolean => {
+    return cacheService.set(dataCacheService.generateProjectsKey(userId), data, CACHE_TTL.PROJECTS);
   },
 
   invalidateProjects: (): void => {
@@ -72,31 +72,31 @@ export const dataCacheService = {
   },
 
   // Insights caching
-  getInsights: <T>(): T | undefined => {
-    return cacheService.get<T>(dataCacheService.generateInsightsKey());
+  getInsights: <T>(userId: string): T | undefined => {
+    return cacheService.get<T>(dataCacheService.generateInsightsKey(userId));
   },
 
-  setInsights: <T>(data: T): boolean => {
-    return cacheService.set(dataCacheService.generateInsightsKey(), data, CACHE_TTL.INSIGHTS);
+  setInsights: <T>(data: T, userId: string): boolean => {
+    return cacheService.set(dataCacheService.generateInsightsKey(userId), data, CACHE_TTL.INSIGHTS);
   },
 
-  invalidateInsights: (): void => {
-    // Clear insights cache
-    cacheService.del(dataCacheService.generateInsightsKey());
+  invalidateInsights: (userId: string): void => {
+    // Clear insights cache for specific user
+    cacheService.del(dataCacheService.generateInsightsKey(userId));
   },
 
   // Templates caching
-  getTemplates: <T>(): T | undefined => {
-    return cacheService.get<T>(dataCacheService.generateTemplatesKey());
+  getTemplates: <T>(userId: string): T | undefined => {
+    return cacheService.get<T>(dataCacheService.generateTemplatesKey(userId));
   },
 
-  setTemplates: <T>(data: T): boolean => {
-    return cacheService.set(dataCacheService.generateTemplatesKey(), data, CACHE_TTL.TEMPLATES);
+  setTemplates: <T>(data: T, userId: string): boolean => {
+    return cacheService.set(dataCacheService.generateTemplatesKey(userId), data, CACHE_TTL.TEMPLATES);
   },
 
-  invalidateTemplates: (): void => {
-    // Clear templates cache
-    cacheService.del(dataCacheService.generateTemplatesKey());
+  invalidateTemplates: (userId: string): void => {
+    // Clear templates cache for specific user
+    cacheService.del(dataCacheService.generateTemplatesKey(userId));
   },
 
   // Cache statistics
