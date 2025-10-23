@@ -269,7 +269,7 @@ export default function ProjectDetail() {
                 {project.name}
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                {tasks?.length || 0} tasks
+                {tasks?.filter(t => t.status !== "completed" && t.status !== "archived").length || 0} tasks
               </p>
             </div>
           </div>

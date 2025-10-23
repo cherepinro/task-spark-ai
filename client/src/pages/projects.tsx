@@ -25,7 +25,11 @@ export default function Projects() {
   });
 
   const getTaskCount = (projectId: string) => {
-    return tasks?.filter(task => task.projectId === projectId).length || 0;
+    return tasks?.filter(task => 
+      task.projectId === projectId && 
+      task.status !== "completed" && 
+      task.status !== "archived"
+    ).length || 0;
   };
 
   const createProjectMutation = useMutation({
