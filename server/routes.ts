@@ -285,6 +285,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Otherwise Express matches "bulk" as an ID parameter
   app.patch("/api/tasks/bulk", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
+      const userId = req.user!.id;
       const { updates } = req.body;
       
       if (!Array.isArray(updates)) {
@@ -305,11 +306,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
 
-      // Apply all updates
-      const updatedTasks = await Promise.all(
-        validatedUpdates.map(async ({ id, updates }) => {
-          return await storage.updateTask(id, updates);
+      // Verify ownership for all tasks before any updates
+      const ownershipChecks = await Promise.all(
+        validatedUpdates.map(async ({ id }) => {
+          const task = await storage.getTask(id);
+          return { id, task, ownsTask: task?.userId === userId };
         })
+      );
+      
+      const unauthorizedTasks = ownershipChecks.filter(check => check.task && !check.ownsTask);
+      if (unauthorizedTasks.length > 0) {
+        return res.status(403).json({ 
+          error: "Forbidden: You don't own some of these tasks",
+          unauthorizedIds: unauthorizedTasks.map(t => t.id)
+        });
+      }
+
+      // Apply all updates (only for tasks that exist and are owned)
+      const updatedTasks = await Promise.all(
+        validatedUpdates
+          .filter(({ id }) => ownershipChecks.find(c => c.id === id)?.task)
+          .map(async ({ id, updates }) => {
+            return await storage.updateTask(id, updates);
+          })
       );
 
       // Filter out any null results (task not found)
@@ -333,6 +352,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/tasks/:id", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
+      const userId = req.user!.id;
+      
+      // Verify ownership before update
+      const existingTask = await storage.getTask(req.params.id);
+      if (!existingTask) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      if (existingTask.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden: You don't own this task" });
+      }
+      
       const updates = updateTaskSchema.parse(req.body);
       const task = await storage.updateTask(req.params.id, updates);
       if (!task) {
@@ -392,6 +422,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/tasks/:id", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
+      const userId = req.user!.id;
+      
+      // Verify ownership before delete
+      const existingTask = await storage.getTask(req.params.id);
+      if (!existingTask) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      if (existingTask.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden: You don't own this task" });
+      }
+      
       const deleted = await storage.deleteTask(req.params.id);
       if (!deleted) {
         return res.status(404).json({ error: "Task not found" });
@@ -469,8 +510,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/projects/:id", isAuthenticated, async (req: Request, res: Response) => {
+  app.patch("/api/projects/:id", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
+      const userId = req.user!.id;
+      
+      // Verify ownership before update
+      const existingProject = await storage.getProject(req.params.id);
+      if (!existingProject) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      if (existingProject.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden: You don't own this project" });
+      }
+      
       const updates = insertProjectSchema.partial().parse(req.body);
       const project = await storage.updateProject(req.params.id, updates);
       if (!project) {
@@ -489,8 +541,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/projects/:id", isAuthenticated, async (req: Request, res: Response) => {
+  app.delete("/api/projects/:id", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
+      const userId = req.user!.id;
+      
+      // Verify ownership before delete
+      const existingProject = await storage.getProject(req.params.id);
+      if (!existingProject) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      if (existingProject.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden: You don't own this project" });
+      }
+      
       const deleted = await storage.deleteProject(req.params.id);
       if (!deleted) {
         return res.status(404).json({ error: "Project not found" });
@@ -1094,6 +1157,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/templates/:id", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = req.user!.id;
+      
+      // Verify ownership before update
+      const existingTemplate = await storage.getTemplate(req.params.id);
+      if (!existingTemplate) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      if (existingTemplate.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden: You don't own this template" });
+      }
+      
       const validatedData = insertTaskTemplateSchema.partial().parse(req.body);
       const template = await storage.updateTemplate(req.params.id, validatedData);
       if (!template) {
@@ -1115,6 +1188,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/templates/:id", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = req.user!.id;
+      
+      // Verify ownership before delete
+      const existingTemplate = await storage.getTemplate(req.params.id);
+      if (!existingTemplate) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      if (existingTemplate.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden: You don't own this template" });
+      }
+      
       const success = await storage.deleteTemplate(req.params.id);
       if (!success) {
         return res.status(404).json({ error: "Template not found" });
