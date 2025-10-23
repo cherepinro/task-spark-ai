@@ -1165,9 +1165,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Usage tracking endpoint
-  app.get("/api/usage", isAuthenticated, async (_req: Request, res: Response) => {
+  app.get("/api/usage", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const usage = await getAllUsage();
+      const userId = req.user!.id;
+      const usage = await getAllUsage(userId);
       res.json(usage);
     } catch (error) {
       logger.apiError('GET /api/usage', error);
