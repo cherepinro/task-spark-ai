@@ -34,7 +34,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Sparkles, Loader2, Repeat, Bell } from "lucide-react";
+import { CalendarIcon, Sparkles, Loader2, Repeat } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
@@ -75,8 +75,6 @@ export function TaskCreationModal({
       recurrenceInterval: "1",
       recurrenceEndDate: undefined,
       recurrenceEndCount: undefined,
-      enableReminder: false,
-      reminderHoursBefore: 1,
     },
   });
 
@@ -98,8 +96,6 @@ export function TaskCreationModal({
         recurrenceInterval: initialTask.recurrenceInterval || "1",
         recurrenceEndDate: initialTask.recurrenceEndDate ? new Date(initialTask.recurrenceEndDate) : undefined,
         recurrenceEndCount: initialTask.recurrenceEndCount || undefined,
-        enableReminder: initialTask.enableReminder || false,
-        reminderHoursBefore: initialTask.reminderHoursBefore || 1,
       });
     } else {
       form.reset({
@@ -117,8 +113,6 @@ export function TaskCreationModal({
         recurrenceInterval: "1",
         recurrenceEndDate: undefined,
         recurrenceEndCount: undefined,
-        enableReminder: false,
-        reminderHoursBefore: 1,
       });
     }
   }, [initialTask, form]);
@@ -529,65 +523,6 @@ export function TaskCreationModal({
                   )}
                 />
               </div>
-            )}
-
-            <FormField
-              control={form.control}
-              name="enableReminder"
-              render={({ field }) => (
-                <FormItem className="flex items-center justify-between gap-4 rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="flex items-center gap-2">
-                      <Bell className="h-4 w-4 text-primary" />
-                      Push Reminder
-                    </FormLabel>
-                    <div className="text-sm text-muted-foreground">
-                      Get notified before the deadline
-                    </div>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={!!field.value}
-                      onCheckedChange={field.onChange}
-                      data-testid="switch-enable-reminder"
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            {form.watch("enableReminder") && (
-              <FormField
-                control={form.control}
-                name="reminderHoursBefore"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Remind me (hours before deadline)</FormLabel>
-                    <Select
-                      onValueChange={(value) => field.onChange(parseInt(value))}
-                      value={field.value?.toString()}
-                    >
-                      <FormControl>
-                        <SelectTrigger data-testid="select-reminder-hours">
-                          <SelectValue placeholder="Select hours" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="1">1 hour before</SelectItem>
-                        <SelectItem value="2">2 hours before</SelectItem>
-                        <SelectItem value="3">3 hours before</SelectItem>
-                        <SelectItem value="6">6 hours before</SelectItem>
-                        <SelectItem value="12">12 hours before</SelectItem>
-                        <SelectItem value="24">1 day before</SelectItem>
-                        <SelectItem value="48">2 days before</SelectItem>
-                        <SelectItem value="72">3 days before</SelectItem>
-                        <SelectItem value="168">1 week before</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             )}
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground bg-primary/5 p-3 rounded-lg border border-primary/20">
