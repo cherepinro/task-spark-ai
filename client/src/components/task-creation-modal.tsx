@@ -34,7 +34,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Sparkles, Loader2, Repeat } from "lucide-react";
+import { CalendarIcon, Sparkles, Loader2, Repeat, Bell } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
@@ -75,6 +75,8 @@ export function TaskCreationModal({
       recurrenceInterval: "1",
       recurrenceEndDate: undefined,
       recurrenceEndCount: undefined,
+      enableReminder: null,
+      reminderHoursBefore: null,
     },
   });
 
@@ -96,6 +98,8 @@ export function TaskCreationModal({
         recurrenceInterval: initialTask.recurrenceInterval || "1",
         recurrenceEndDate: initialTask.recurrenceEndDate ? new Date(initialTask.recurrenceEndDate) : undefined,
         recurrenceEndCount: initialTask.recurrenceEndCount || undefined,
+        enableReminder: initialTask.enableReminder ?? null,
+        reminderHoursBefore: initialTask.reminderHoursBefore ?? null,
       });
     } else {
       form.reset({
@@ -113,6 +117,8 @@ export function TaskCreationModal({
         recurrenceInterval: "1",
         recurrenceEndDate: undefined,
         recurrenceEndCount: undefined,
+        enableReminder: null,
+        reminderHoursBefore: null,
       });
     }
   }, [initialTask, form]);
@@ -412,6 +418,68 @@ export function TaskCreationModal({
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="enableReminder"
+              render={({ field }) => (
+                <FormItem className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="flex items-center gap-2">
+                      <Bell className="h-4 w-4 text-primary" />
+                      Напоминание
+                    </FormLabel>
+                    <div className="text-sm text-muted-foreground">
+                      Получить уведомление перед дедлайном
+                    </div>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value === true}
+                      onCheckedChange={(checked) => {
+                        field.onChange(checked ? true : null);
+                        if (!checked) {
+                          form.setValue("reminderHoursBefore", null);
+                        }
+                      }}
+                      data-testid="switch-reminder"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            {form.watch("enableReminder") === true && (
+              <div className="rounded-lg border p-4 bg-muted/30">
+                <FormField
+                  control={form.control}
+                  name="reminderHoursBefore"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>За сколько часов до дедлайна</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="168"
+                          placeholder="1"
+                          value={field.value ?? ""}
+                          onChange={(e) => {
+                            const value = e.target.value === "" ? null : parseInt(e.target.value);
+                            field.onChange(value);
+                          }}
+                          data-testid="input-reminder-hours"
+                        />
+                      </FormControl>
+                      <p className="text-xs text-muted-foreground">
+                        Напоминание будет отправлено за указанное количество часов до дедлайна
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
 
             <FormField
               control={form.control}
