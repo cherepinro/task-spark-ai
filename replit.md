@@ -168,8 +168,37 @@ Affected schemas:
 - `insertUserStatsSchema`
 - `insertPushTokenSchema`
 
-### Reminder Feature Removal
-The per-task reminder feature (`enable_reminder`, `reminder_hours_before` fields) was completely removed from the codebase due to production deployment issues. The application now uses simple deadline-based notifications (tasks due within 1 hour trigger push notifications). Development database columns have been dropped; production database may still contain these columns and requires manual cleanup.
+### Per-Task Notification Settings (RE-ADDED)
+**Date**: October 23, 2025  
+**Status**: Feature Re-implemented
+
+**Description**: Re-added per-task notification customization with nullable fields. Users can now configure custom reminder times for each task individually.
+
+**New Fields in Task Schema**:
+- `enableReminder` (boolean, nullable) - Enable/disable notification for this specific task
+- `reminderHoursBefore` (integer, nullable) - How many hours before deadline to send notification (1-168 hours)
+
+**Behavior**:
+- If `enableReminder` is `true` and `reminderHoursBefore` is set, notification is sent at the custom time
+- If `enableReminder` is `false` or `null`, falls back to default behavior (1 hour before deadline)
+- Notifications only sent for tasks with `deadlineDateTime` or `dueDate` set
+
+**UI Changes**:
+- Added notification settings section in task creation/edit modal
+- Bell icon indicates notification settings
+- Toggle switch to enable/disable per-task reminders
+- Number input (1-168 hours) for custom reminder time
+- All UI text in Russian
+
+**Backend Changes**:
+- Updated `NotificationService.checkAndSendDueTaskNotifications()` to respect per-task settings
+- Notification time calculated based on task's `reminderHoursBefore` value
+- Falls back to 1 hour default if custom settings not configured
+
+**Files Modified**:
+- `shared/schema.ts` - Added nullable fields to tasks table
+- `client/src/components/task-creation-modal.tsx` - Added UI controls
+- `server/services/notification.service.ts` - Updated notification logic
 
 ### Admin Access
 Admin access configured for `cherepin.roman@yandex.ru` in development. Production database requires manual update to grant admin role.
