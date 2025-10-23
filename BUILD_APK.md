@@ -6,7 +6,8 @@ Unfortunately, building Android APKs directly on Replit is not practical due to 
 
 ### Prerequisites
 - **Android Studio** (download from https://developer.android.com/studio)
-- **Node.js 18+** installed
+- **Node.js 20+** installed (Capacitor CLI requirement)
+- **JDK 21** (included with Android Studio, or download from https://adoptium.net/)
 - **Git** installed
 
 ### Steps
