@@ -15,9 +15,9 @@ Unfortunately, building Android APKs directly on Replit is not practical due to 
 3. **Wait for deployment** to complete
 4. **Copy your deployment URL** (e.g., `https://task-spark-ai-your-username.replit.app`)
 
-### Step 2: Configure API URL
+### Step 2: Configure API URL in Replit
 
-Add to your Replit Secrets (🔒 lock icon in left sidebar):
+Add to your **Replit Secrets** (🔒 lock icon in left sidebar):
 
 ```
 VITE_API_URL=https://your-deployment-url.replit.app
@@ -28,7 +28,28 @@ VITE_API_URL=https://your-deployment-url.replit.app
 VITE_API_URL=https://task-spark-ai-cherepinro.replit.app
 ```
 
-### Step 3: Verify Configuration
+### Step 3: Add Secrets to GitHub (CRITICAL!)
+
+**GitHub Actions CANNOT access Replit secrets!** You must add them separately:
+
+1. Go to your GitHub repository
+2. Click **Settings** → **Secrets and variables** → **Actions**
+3. Click **"New repository secret"**
+4. Add these secrets (one at a time):
+
+| Secret Name | Value | Where to Get It |
+|-------------|-------|-----------------|
+| `VITE_API_URL` | Your Replit deployment URL | Step 1 deployment |
+| `VITE_FIREBASE_API_KEY` | Your Firebase API key | Replit Secrets (copy from there) |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Your Firebase auth domain | Replit Secrets |
+| `VITE_FIREBASE_PROJECT_ID` | Your Firebase project ID | Replit Secrets |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Your Firebase storage bucket | Replit Secrets |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Your Firebase sender ID | Replit Secrets |
+| `VITE_FIREBASE_APP_ID` | Your Firebase app ID | Replit Secrets |
+
+**Without these GitHub secrets, your APK will have a white screen!**
+
+### Step 4: Verify Configuration
 
 The app will automatically:
 - ✅ Use relative URLs (`/api/tasks`) when running in web browser
