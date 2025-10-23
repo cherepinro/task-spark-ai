@@ -99,6 +99,63 @@ Additionally, the `/api/usage` endpoint was not passing `userId` to `getAllUsage
 - `server/services/usage-tracker.service.ts`
 - `server/routes.ts` (GET /api/usage endpoint)
 
+### Authorization Bypass Vulnerabilities (CRITICAL SECURITY FIX)
+**Date**: October 23, 2025  
+**Severity**: CRITICAL - Unauthorized Data Modification/Deletion
+
+**Bug**: Multiple PATCH and DELETE endpoints lacked ownership verification, allowing ANY authenticated user to modify or delete ANY other user's data by simply knowing/guessing the resource ID. This affected:
+- Tasks (PATCH /api/tasks/:id, DELETE /api/tasks/:id, PATCH /api/tasks/bulk)
+- Projects (PATCH /api/projects/:id, DELETE /api/projects/:id)
+- Templates (PATCH /api/templates/:id, DELETE /api/templates/:id)
+
+**Impact**: 
+- User A could delete User B's tasks/projects/templates
+- User A could modify User B's tasks/projects/templates
+- Bulk operations could modify multiple users' tasks simultaneously
+- Complete authorization bypass for these operations
+
+**Root Cause**: Route handlers called storage layer methods (e.g., `updateTask`, `deleteProject`) without first verifying that the authenticated user owns the resource. The storage layer only filters by ID, not by userId.
+
+**Fix Applied**: Added ownership verification to all affected endpoints:
+```typescript
+// BEFORE (Vulnerable)
+app.patch("/api/tasks/:id", isAuthenticated, async (req, res) => {
+  const updates = updateTaskSchema.parse(req.body);
+  const task = await storage.updateTask(req.params.id, updates);
+  // ...
+});
+
+// AFTER (Secured)
+app.patch("/api/tasks/:id", isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  const userId = req.user!.id;
+  
+  // Verify ownership before update
+  const existingTask = await storage.getTask(req.params.id);
+  if (!existingTask) {
+    return res.status(404).json({ error: "Task not found" });
+  }
+  if (existingTask.userId !== userId) {
+    return res.status(403).json({ error: "Forbidden: You don't own this task" });
+  }
+  
+  const updates = updateTaskSchema.parse(req.body);
+  const task = await storage.updateTask(req.params.id, updates);
+  // ...
+});
+```
+
+**Endpoints Fixed**:
+- PATCH /api/tasks/:id - Added ownership check
+- DELETE /api/tasks/:id - Added ownership check
+- PATCH /api/tasks/bulk - Added batch ownership verification (rejects entire request if any task is unauthorized)
+- PATCH /api/projects/:id - Added ownership check
+- DELETE /api/projects/:id - Added ownership check
+- PATCH /api/templates/:id - Added ownership check
+- DELETE /api/templates/:id - Added ownership check
+
+**Files Modified**:
+- `server/routes.ts` (all affected PATCH/DELETE endpoints)
+
 ### Schema Validation Fix
 **Critical Bug Fixed**: All insert schemas were incorrectly requiring `userId` in the request body. This prevented task/project creation as the client couldn't pass validation. **Solution**: All insert schemas now omit `userId` field - the server extracts it from the authenticated session and adds it after validation.
 
