@@ -2,6 +2,40 @@
 
 Unfortunately, building Android APKs directly on Replit is not practical due to the large Android SDK requirements and build tools needed. Here are the best options to generate your APK:
 
+---
+
+## ⚠️ CRITICAL: Deploy Backend First
+
+**Before building the APK**, you MUST deploy your backend to get a production URL. Otherwise, the app will show a **white screen** because it doesn't know where to send API requests!
+
+### Step 1: Deploy on Replit
+
+1. **Click "Deploy"** button in Replit (top right)
+2. **Choose "Autoscale"** or "Reserved VM" deployment
+3. **Wait for deployment** to complete
+4. **Copy your deployment URL** (e.g., `https://task-spark-ai-your-username.replit.app`)
+
+### Step 2: Configure API URL
+
+Add to your Replit Secrets (🔒 lock icon in left sidebar):
+
+```
+VITE_API_URL=https://your-deployment-url.replit.app
+```
+
+**Example:**
+```
+VITE_API_URL=https://task-spark-ai-cherepinro.replit.app
+```
+
+### Step 3: Verify Configuration
+
+The app will automatically:
+- ✅ Use relative URLs (`/api/tasks`) when running in web browser
+- ✅ Use `VITE_API_URL` when running in Android APK
+
+---
+
 ## Option 1: Build Locally (Recommended)
 
 ### Prerequisites
@@ -195,6 +229,22 @@ cd android
 ./gradlew clean
 ./gradlew assembleDebug --stacktrace
 ```
+
+### White screen on app launch
+
+**Most common issue!** This means the app cannot connect to your backend.
+
+**Solution:**
+1. Make sure you deployed the backend on Replit
+2. Add `VITE_API_URL` to Replit Secrets with your deployment URL
+3. Rebuild the APK after adding the secret
+4. The secret must start with `VITE_` to be accessible in the frontend
+
+**Debug:**
+- Connect phone to computer via USB
+- Open Chrome and go to `chrome://inspect`
+- Click "Inspect" on your app
+- Check console for error messages
 
 ### App crashes on launch
 Check that Firebase configuration is set up correctly with your `google-services.json` file in `android/app/`.
