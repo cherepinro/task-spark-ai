@@ -56,6 +56,10 @@ export const tasks = pgTable("tasks", {
   
   // Task decomposition fields
   hours: numeric("hours", { precision: 5, scale: 2 }),
+  
+  // Per-task notification settings (nullable)
+  enableReminder: boolean("enable_reminder"),
+  reminderHoursBefore: integer("reminder_hours_before"),
 });
 
 export const projects = pgTable("projects", {
@@ -165,6 +169,9 @@ const baseTaskSchema = createInsertSchema(tasks).omit({
   recurrenceEndDate: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional(),
   // Allow hours as string, number, or null (Drizzle handles conversion)
   hours: z.string().optional().nullable(),
+  // Per-task notification settings (nullable)
+  enableReminder: z.boolean().optional().nullable(),
+  reminderHoursBefore: z.number().int().positive().optional().nullable(),
 });
 
 export const insertTaskSchema = baseTaskSchema.refine((data) => {
