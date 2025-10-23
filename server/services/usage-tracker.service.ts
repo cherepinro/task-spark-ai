@@ -86,10 +86,10 @@ export async function checkUsage(
     let used = 0;
     
     if (featureType === 'tasks') {
-      const result = await db.select({ count: count() }).from(tasks);
+      const result = await db.select({ count: count() }).from(tasks).where(eq(tasks.userId, userId));
       used = result[0]?.count || 0;
     } else if (featureType === 'projects') {
-      const result = await db.select({ count: count() }).from(projects);
+      const result = await db.select({ count: count() }).from(projects).where(eq(projects.userId, userId));
       used = result[0]?.count || 0;
     }
     
