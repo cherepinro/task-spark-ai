@@ -19,6 +19,7 @@ import Dashboard from "@/pages/dashboard";
 import Today from "@/pages/today";
 import Upcoming from "@/pages/upcoming";
 import Projects from "@/pages/projects";
+import ProjectDetail from "@/pages/project-detail";
 import Insights from "@/pages/insights";
 import Templates from "@/pages/templates";
 import Archive from "@/pages/archive";
@@ -64,6 +65,7 @@ function Router() {
           <Route path="/" component={Dashboard} />
           <Route path="/today" component={Today} />
           <Route path="/upcoming" component={Upcoming} />
+          <Route path="/projects/:id" component={ProjectDetail} />
           <Route path="/projects" component={Projects} />
           <Route path="/insights" component={Insights} />
           <Route path="/day-plan" component={DayPlan} />
