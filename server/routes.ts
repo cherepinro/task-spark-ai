@@ -698,7 +698,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user!.id;
       
       // Verify task ownership
-      const task = await storage.getTaskById(taskId);
+      const task = await storage.getTask(taskId);
       if (!task || task.userId !== userId) {
         return res.status(404).json({ error: "Task not found" });
       }
