@@ -38,20 +38,26 @@ An independent FastAPI-based ML microservice calculates a user's procrastination
 ## Recent Fixes
 
 ### AI Chat Task Creation Fix (October 24, 2025)
-**Problem**: AI Assistant claimed to create tasks but they didn't appear. After deployment, task creation completely stopped working when OpenAI returned empty responses.
+**Problem**: AI Assistant claimed to create tasks but they didn't appear. After deployment, task creation completely stopped working when OpenAI returned empty responses. Additionally, Russian language input didn't work at all.
 
 **Root Causes**:
 1. AI hallucinated fake task IDs
 2. Empty OpenAI responses blocked task intent detection
 3. Limited keyword detection ("create task" but not "create a task")
+4. **NO Russian language support** - only English keywords were detected
 
 **Solution**:
 - Reordered logic: task intent detection happens FIRST, before checking AI response
-- Enhanced keywords: "create a task", "add a task", "remind me to", etc.
+- Enhanced English keywords: "create a task", "add a task", "remind me to", etc.
+- **Added Russian keywords**: "создай задачу", "добавь задачу", "напомни мне", "мне нужно", "новая задача", etc.
 - Improved system prompt to prevent AI hallucination
 - Resilient to empty API responses - tasks created even when OpenAI fails
 - Russian error/success toasts, comprehensive logging
 
-**Result**: Task creation works consistently, even with API failures. Tasks appear immediately in list.
+**Result**: Task creation works consistently in **both Russian and English**, even with API failures. Tasks appear immediately in list.
+
+**Supported Languages**:
+- 🇷🇺 Russian: "Создай задачу купить молоко", "Добавь задачу позвонить врачу", "Напомни мне..."
+- 🇬🇧 English: "Create a task to buy milk", "Add a task to call the doctor", "Remind me to..."
 
 **Files Modified**: `server/services/ai.service.ts`, `client/src/components/ai-chat-panel.tsx`

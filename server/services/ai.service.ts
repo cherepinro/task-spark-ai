@@ -214,7 +214,13 @@ Be concise and helpful.`;
 
     // Check if the message contains a task creation intent FIRST
     // This ensures task creation works even if OpenAI returns empty response
-    const taskKeywords = ["create task", "add task", "new task", "remind me to", "i need to", "todo", "create a task", "add a task"];
+    const taskKeywords = [
+      // English keywords
+      "create task", "add task", "new task", "remind me to", "i need to", "todo", "create a task", "add a task",
+      // Russian keywords (Русский)
+      "создай задачу", "создать задачу", "добавь задачу", "добавить задачу", 
+      "новая задача", "новую задачу", "напомни мне", "напомнить мне", "мне нужно", "нужно сделать"
+    ];
     const messageLower = message.toLowerCase();
     const containsTaskIntent = taskKeywords.some(keyword => messageLower.includes(keyword));
 
