@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Sparkles, Send, X, Plus } from "lucide-react";
+import { Sparkles, Send, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -114,14 +114,37 @@ export function AIChatPanel({ open, onOpenChange }: AIChatPanelProps) {
     }, 100);
   };
 
+  const handleNewChat = () => {
+    setMessages([]);
+    setInput("");
+    toast({
+      title: "Новый чат",
+      description: "История чата очищена. Начните новый разговор!",
+    });
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-96 p-0 flex flex-col" data-testid="panel-ai-chat">
         <SheetHeader className="p-4 border-b">
-          <SheetTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            AI Assistant
-          </SheetTitle>
+          <div className="flex items-center justify-between">
+            <SheetTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              AI Assistant
+            </SheetTitle>
+            {messages.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNewChat}
+                data-testid="button-new-chat"
+                className="gap-2"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Новый чат
+              </Button>
+            )}
+          </div>
           <SheetDescription>
             Get intelligent help with your tasks
           </SheetDescription>
