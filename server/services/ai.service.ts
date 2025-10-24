@@ -169,44 +169,87 @@ export async function chatWithAI(
   conversationHistory: ChatMessage[],
   tasks: TaskSummary[]
 ): Promise<ChatResponse> {
-  const taskSummary = tasks.length > 0 
-    ? tasks.slice(0, 3).map(t => `${t.title} (${t.priority}, ${t.status})`).join(', ')
-    : "no tasks";
+  try {
+    const taskSummary = tasks.length > 0 
+      ? tasks.slice(0, 3).map(t => `${t.title} (${t.priority}, ${t.status})`).join(', ')
+      : "no tasks";
 
-  const systemPrompt = `You are TaskSpark AI, a task management assistant. Current tasks: ${taskSummary}. Be concise and helpful.`;
+    const systemPrompt = `You are TaskSpark AI, a task management assistant. Current tasks: ${taskSummary}. Be concise and helpful.`;
 
-  // Filter out any messages with invalid content
-  const validHistory = conversationHistory.filter(
-    (msg) => msg.content && typeof msg.content === "string" && msg.content.trim() !== ""
-  );
+    // Filter out any messages with invalid content
+    const validHistory = conversationHistory.filter(
+      (msg) => msg.content && typeof msg.content === "string" && msg.content.trim() !== ""
+    );
 
-  const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
-    { role: "system", content: systemPrompt },
-    ...validHistory,
-    { role: "user", content: message },
-  ];
+    const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+      { role: "system", content: systemPrompt },
+      ...validHistory,
+      { role: "user", content: message },
+    ];
 
-  const response = await openai.chat.completions.create({
-    model: MODEL,
-    messages,
-    max_completion_tokens: 1000,
-  });
+    logger.info('AI Chat: Processing message', { 
+      messageCount: messages.length, 
+      userMessage: message.substring(0, 50),
+      historyLength: validHistory.length 
+    });
 
-  const aiMessage = response.choices[0]?.message?.content || "I'm here to help with your tasks!";
+    const response = await openai.chat.completions.create({
+      model: MODEL,
+      messages,
+      max_completion_tokens: 1000,
+    });
 
-  // Check if the message contains a task creation intent
-  const taskKeywords = ["create task", "add task", "new task", "remind me to", "i need to", "todo"];
-  const containsTaskIntent = taskKeywords.some(keyword => message.toLowerCase().includes(keyword));
+    logger.info('AI Chat: OpenAI API response', {
+      choicesCount: response.choices?.length,
+      finishReason: response.choices?.[0]?.finish_reason,
+      hasContent: !!response.choices?.[0]?.message?.content,
+      contentType: typeof response.choices?.[0]?.message?.content,
+      contentValue: response.choices?.[0]?.message?.content,
+      fullResponse: JSON.stringify(response).substring(0, 500)
+    });
 
-  let taskSuggestion: ParsedTask | undefined;
-  if (containsTaskIntent) {
-    taskSuggestion = await parseNaturalLanguageTask(message);
+    const aiMessage = response.choices[0]?.message?.content;
+    
+    if (!aiMessage || aiMessage.trim() === "") {
+      logger.warn('AI Chat: Empty response from OpenAI API - using fallback', { 
+        hasChoices: !!response.choices.length,
+        hasMessage: !!response.choices[0]?.message,
+        messageObject: response.choices[0]?.message,
+        finishReason: response.choices?.[0]?.finish_reason
+      });
+      
+      // Return a helpful fallback instead of throwing an error
+      return {
+        message: "I'm processing your request. Could you rephrase or try again? I'm here to help with task management!",
+        taskSuggestion: undefined,
+      };
+    }
+
+    logger.info('AI Chat: Response received', { 
+      responseLength: aiMessage.length,
+      responsePreview: aiMessage.substring(0, 50)
+    });
+
+    // Check if the message contains a task creation intent
+    const taskKeywords = ["create task", "add task", "new task", "remind me to", "i need to", "todo"];
+    const containsTaskIntent = taskKeywords.some(keyword => message.toLowerCase().includes(keyword));
+
+    let taskSuggestion: ParsedTask | undefined;
+    if (containsTaskIntent) {
+      taskSuggestion = await parseNaturalLanguageTask(message);
+    }
+
+    return {
+      message: aiMessage,
+      taskSuggestion,
+    };
+  } catch (error) {
+    logger.serviceError('ai', 'chatWithAI', error, { 
+      userMessage: message.substring(0, 50),
+      historyLength: conversationHistory.length 
+    });
+    throw error;
   }
-
-  return {
-    message: aiMessage,
-    taskSuggestion,
-  };
 }
 
 export interface DecomposedTask {
