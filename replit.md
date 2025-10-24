@@ -228,5 +228,32 @@ Removing the unused Passport.js code eliminates confusion and simplifies the cod
 - Deleted: `server/config/passport.ts`
 - Modified: `server/auth.ts` (removed Google OAuth routes and imports)
 
+### Today's Focus Filtering Update (October 24, 2025)
+**Date**: October 24, 2025  
+**Status**: Completed
+
+**Change**: Updated "Today's Focus" page to prioritize real deadlines over AI Day Planner scheduled dates.
+
+**Problem**: After using AI Day Planner, low-priority tasks with distant deadlines were appearing in "Today's Focus" simply because they were scheduled to be worked on today (`dueDate` = today), even though their actual deadline (`deadlineDateTime`) was weeks away.
+
+**Solution**: Modified filtering logic to:
+1. **Priority 1**: Show tasks with `deadlineDateTime` = TODAY (actual deadline)
+2. **Priority 2**: Show tasks with `dueDate` = TODAY AND no `deadlineDateTime` set
+3. **Exclude**: Tasks with `dueDate` = TODAY but `deadlineDateTime` in the future
+
+**Date Field Semantics**:
+- `dueDate` - When you plan to **work on** the task (set by AI Day Planner)
+- `deadlineDateTime` - When the task must be **finished** (actual deadline)
+
+**Behavior**:
+- ✅ Task with deadline today → Shows in Today's Focus
+- ✅ Task scheduled today with no deadline → Shows in Today's Focus
+- ❌ Task scheduled today but deadline next week → Does NOT show (this is the fix!)
+
+**Files Modified**:
+- `client/src/pages/today.tsx` - Updated filtering logic
+
+**Testing**: E2E test confirmed correct filtering behavior across all scenarios.
+
 ### Admin Access
 Admin access configured for `cherepin.roman@yandex.ru` in development. Production database requires manual update to grant admin role.
