@@ -7,7 +7,6 @@ import { logger } from "./services/logger.service";
 import { storage } from "./storage";
 import { signupSchema, loginSchema } from "@shared/schema";
 import type { AuthenticatedRequest } from './types';
-import { configurePassport } from "./config/passport";
 import { firebaseService } from "./services/firebase.service";
 import { z } from "zod";
 
@@ -38,12 +37,9 @@ export async function setupAuth(app: Express) {
   app.set("trust proxy", 1);
   app.use(getSession());
 
-  // Initialize Passport
+  // Initialize Passport (used for session management)
   app.use(passport.initialize());
   app.use(passport.session());
-  
-  // Configure Passport strategies
-  configurePassport();
 
   // Create admin account if needed
   await authService.createAdminIfNeeded();
@@ -216,36 +212,6 @@ export async function setupAuth(app: Express) {
     });
   });
 
-  // Google OAuth routes (only if credentials are configured)
-  const hasGoogleCredentials = process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET;
-  
-  if (hasGoogleCredentials) {
-    app.get(
-      "/auth/google",
-      passport.authenticate("google", { scope: ["profile", "email"] })
-    );
-
-    app.get(
-      "/auth/google/callback",
-      passport.authenticate("google", { failureRedirect: "/login" }),
-      (req, res) => {
-        // Successful authentication
-        // Save user ID in session
-        if (req.user && typeof req.user === 'object' && 'id' in req.user) {
-          req.session.userId = (req.user as any).id;
-        }
-        // Redirect to dashboard
-        res.redirect("/");
-      }
-    );
-  } else {
-    // Fallback route if Google OAuth is not configured
-    app.get("/auth/google", (req, res) => {
-      res.status(503).json({ 
-        message: "Google OAuth is not configured. Please contact the administrator to set up Google sign-in." 
-      });
-    });
-  }
 
   // Get current authenticated user endpoint
   app.get("/api/auth/user", async (req, res) => {
@@ -276,7 +242,7 @@ export async function setupAuth(app: Express) {
     }
   });
 
-  logger.info("Email/password and Google OAuth authentication configured successfully");
+  logger.info("Authentication configured: Email/password + Firebase OAuth");
 }
 
 // Authentication middleware - check if user is authenticated
