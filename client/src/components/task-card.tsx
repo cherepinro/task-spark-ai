@@ -13,6 +13,7 @@ import {
 import { Calendar, MoreVertical, Sparkles, FolderKanban, Repeat, Zap, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { useLocation } from "wouter";
 
 interface TaskCardProps {
   task: Task;
@@ -44,6 +45,11 @@ export function TaskCard({
   onBreakdown,
 }: TaskCardProps) {
   const isCompleted = task.status === "completed";
+  const [, navigate] = useLocation();
+
+  const handleNavigateToTask = () => {
+    navigate(`/tasks/${task.id}`);
+  };
 
   return (
     <Card
@@ -66,9 +72,10 @@ export function TaskCard({
             <div className="flex-1">
               <h3
                 className={cn(
-                  "text-base font-medium leading-tight",
+                  "text-base font-medium leading-tight cursor-pointer hover:text-primary transition-colors",
                   isCompleted && "line-through"
                 )}
+                onClick={handleNavigateToTask}
                 data-testid={`text-task-title-${task.id}`}
               >
                 {task.title}
