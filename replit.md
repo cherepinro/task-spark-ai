@@ -34,3 +34,24 @@ An independent FastAPI-based ML microservice calculates a user's procrastination
 - **Authentication**: Firebase Auth (Email/Password + Google OAuth)
 - **Internationalization**: `react-i18next`
 - **Drag and Drop**: `@hello-pangea/dnd`
+
+## Recent Fixes
+
+### AI Chat Task Creation Fix (October 24, 2025)
+**Problem**: AI Assistant claimed to create tasks but they didn't appear. After deployment, task creation completely stopped working when OpenAI returned empty responses.
+
+**Root Causes**:
+1. AI hallucinated fake task IDs
+2. Empty OpenAI responses blocked task intent detection
+3. Limited keyword detection ("create task" but not "create a task")
+
+**Solution**:
+- Reordered logic: task intent detection happens FIRST, before checking AI response
+- Enhanced keywords: "create a task", "add a task", "remind me to", etc.
+- Improved system prompt to prevent AI hallucination
+- Resilient to empty API responses - tasks created even when OpenAI fails
+- Russian error/success toasts, comprehensive logging
+
+**Result**: Task creation works consistently, even with API failures. Tasks appear immediately in list.
+
+**Files Modified**: `server/services/ai.service.ts`, `client/src/components/ai-chat-panel.tsx`

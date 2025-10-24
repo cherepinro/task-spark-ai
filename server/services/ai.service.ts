@@ -212,29 +212,8 @@ Be concise and helpful.`;
       fullResponse: JSON.stringify(response).substring(0, 500)
     });
 
-    const aiMessage = response.choices[0]?.message?.content;
-    
-    if (!aiMessage || aiMessage.trim() === "") {
-      logger.warn('AI Chat: Empty response from OpenAI API - using fallback', { 
-        hasChoices: !!response.choices.length,
-        hasMessage: !!response.choices[0]?.message,
-        messageObject: response.choices[0]?.message,
-        finishReason: response.choices?.[0]?.finish_reason
-      });
-      
-      // Return a helpful fallback instead of throwing an error
-      return {
-        message: "I'm processing your request. Could you rephrase or try again? I'm here to help with task management!",
-        taskSuggestion: undefined,
-      };
-    }
-
-    logger.info('AI Chat: Response received', { 
-      responseLength: aiMessage.length,
-      responsePreview: aiMessage.substring(0, 50)
-    });
-
-    // Check if the message contains a task creation intent
+    // Check if the message contains a task creation intent FIRST
+    // This ensures task creation works even if OpenAI returns empty response
     const taskKeywords = ["create task", "add task", "new task", "remind me to", "i need to", "todo", "create a task", "add a task"];
     const messageLower = message.toLowerCase();
     const containsTaskIntent = taskKeywords.some(keyword => messageLower.includes(keyword));
@@ -252,6 +231,33 @@ Be concise and helpful.`;
       taskSuggestion = await parseNaturalLanguageTask(message);
       logger.info('AI Chat: Task suggestion created', { taskSuggestion });
     }
+
+    // Now check if AI response is empty
+    const aiMessage = response.choices[0]?.message?.content;
+    
+    if (!aiMessage || aiMessage.trim() === "") {
+      logger.warn('AI Chat: Empty response from OpenAI API - using fallback', { 
+        hasChoices: !!response.choices.length,
+        hasMessage: !!response.choices[0]?.message,
+        messageObject: response.choices[0]?.message,
+        finishReason: response.choices?.[0]?.finish_reason,
+        taskSuggestionCreated: !!taskSuggestion
+      });
+      
+      // Return a helpful fallback but KEEP the task suggestion if we detected one
+      return {
+        message: taskSuggestion 
+          ? "I'll help you create that task!"
+          : "I'm processing your request. Could you rephrase or try again? I'm here to help with task management!",
+        taskSuggestion,
+      };
+    }
+
+    logger.info('AI Chat: Response received', { 
+      responseLength: aiMessage.length,
+      responsePreview: aiMessage.substring(0, 50),
+      hasTaskSuggestion: !!taskSuggestion
+    });
 
     return {
       message: aiMessage,
