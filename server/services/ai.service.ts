@@ -30,6 +30,7 @@ interface ParsedTask {
   description?: string;
   priority: "low" | "medium" | "high";
   category?: string;
+  projectId?: string;
 }
 
 export async function analyzeTask(task: InsertTask): Promise<AISuggestion> {
@@ -64,11 +65,17 @@ Return as JSON with keys: priority, category, suggestions (array)`;
   }
 }
 
+interface UserProject {
+  id: string;
+  name: string;
+}
+
 export async function parseNaturalLanguageTask(
-  input: string
+  input: string,
+  userProjects?: UserProject[]
 ): Promise<ParsedTask> {
   try {
-    const prompt = `Parse this natural language input into a structured task in JSON format:
+    let prompt = `Parse this natural language input into a structured task in JSON format:
 "${input}"
 
 Extract:
@@ -76,8 +83,15 @@ Extract:
 2. description - any additional details (optional)
 3. priority - assess urgency (low, medium, or high)
 4. category - categorize the task (optional)
+5. projectName - if the user mentions a project, extract the project name (optional)
 
-Return as JSON with keys: title, description, priority, category`;
+Return as JSON with keys: title, description, priority, category, projectName`;
+
+    if (userProjects && userProjects.length > 0) {
+      const projectsList = userProjects.map(p => `"${p.name}"`).join(", ");
+      prompt += `\n\nAvailable projects: ${projectsList}
+If the user mentions one of these project names (in any language), include it as "projectName" in your response.`;
+    }
 
     const response = await openai.chat.completions.create({
       model: MODEL,
@@ -87,14 +101,112 @@ Return as JSON with keys: title, description, priority, category`;
     });
 
     const content = response.choices[0]?.message?.content;
-    if (!content) {
+    if (!content || content.trim() === "") {
+      logger.warn('parseNaturalLanguageTask: Empty content from OpenAI - using fallback parsing', { input });
+      
+      // Fallback: Use simple string processing to extract task and project
+      let title = input;
+      let projectId: string | undefined;
+      
+      // Remove task creation keywords from title
+      const taskKeywordsToRemove = [
+        'создай задачу', 'создать задачу', 'добавь задачу', 'добавить задачу',
+        'новая задача', 'новую задачу', 'напомни мне', 'напомнить мне',
+        'create task', 'add task', 'new task', 'remind me to', 'i need to',
+        'create a task', 'add a task'
+      ];
+      
+      let cleanTitle = title.toLowerCase();
+      for (const keyword of taskKeywordsToRemove) {
+        if (cleanTitle.startsWith(keyword)) {
+          title = title.substring(keyword.length).trim();
+          cleanTitle = title.toLowerCase();
+          break;
+        }
+      }
+      
+      // Try to extract project name
+      if (userProjects && userProjects.length > 0) {
+        const projectKeywords = ['в проекте', 'in project', 'for project', 'to project'];
+        
+        for (const keyword of projectKeywords) {
+          const keywordIndex = cleanTitle.indexOf(keyword);
+          if (keywordIndex !== -1) {
+            const afterKeyword = title.substring(keywordIndex + keyword.length).trim();
+            
+            // Try to match each user project
+            for (const project of userProjects) {
+              if (afterKeyword.toLowerCase().startsWith(project.name.toLowerCase())) {
+                projectId = project.id;
+                // Remove project mention from title
+                title = title.substring(0, keywordIndex).trim();
+                logger.info('parseNaturalLanguageTask: Fallback extracted project', {
+                  projectName: project.name,
+                  projectId,
+                  originalTitle: input,
+                  cleanedTitle: title
+                });
+                break;
+              }
+            }
+            if (projectId) break;
+          }
+        }
+      }
+      
       return {
-        title: input,
+        title: title || input,
         priority: "medium",
+        projectId,
       };
     }
 
-    return JSON.parse(content) as ParsedTask;
+    logger.info('parseNaturalLanguageTask: OpenAI raw response', {
+      content,
+      inputLength: input.length
+    });
+
+    const parsed = JSON.parse(content) as ParsedTask & { projectName?: string };
+    
+    logger.info('parseNaturalLanguageTask: Parsed response', {
+      parsed,
+      hasProjectName: !!parsed.projectName,
+      hasUserProjects: !!userProjects,
+      userProjectCount: userProjects?.length || 0
+    });
+    
+    // Match projectName to projectId if available
+    if (parsed.projectName && userProjects) {
+      logger.info('parseNaturalLanguageTask: Attempting project match', {
+        projectName: parsed.projectName,
+        availableProjects: userProjects.map(p => p.name)
+      });
+      
+      const matchedProject = userProjects.find(
+        p => p.name.toLowerCase() === parsed.projectName?.toLowerCase()
+      );
+      
+      if (matchedProject) {
+        parsed.projectId = matchedProject.id;
+        logger.info('parseNaturalLanguageTask: Project matched!', {
+          projectName: parsed.projectName,
+          matchedProjectId: matchedProject.id
+        });
+      } else {
+        logger.warn('parseNaturalLanguageTask: No project match found', {
+          projectName: parsed.projectName,
+          availableProjects: userProjects.map(p => ({ id: p.id, name: p.name }))
+        });
+      }
+    }
+
+    logger.info('parseNaturalLanguageTask: Final result', {
+      title: parsed.title,
+      hasProjectId: !!parsed.projectId,
+      projectId: parsed.projectId
+    });
+
+    return parsed;
   } catch (error) {
     logger.serviceError('ai', 'parseNaturalLanguageTask', error, { input });
     return {
@@ -167,7 +279,8 @@ export interface ChatResponse {
 export async function chatWithAI(
   message: string,
   conversationHistory: ChatMessage[],
-  tasks: TaskSummary[]
+  tasks: TaskSummary[],
+  userProjects?: UserProject[]
 ): Promise<ChatResponse> {
   try {
     const taskSummary = tasks.length > 0 
@@ -233,8 +346,11 @@ Be concise and helpful.`;
 
     let taskSuggestion: ParsedTask | undefined;
     if (containsTaskIntent) {
-      logger.info('AI Chat: Parsing natural language task');
-      taskSuggestion = await parseNaturalLanguageTask(message);
+      logger.info('AI Chat: Parsing natural language task', {
+        hasProjects: !!userProjects,
+        projectCount: userProjects?.length || 0
+      });
+      taskSuggestion = await parseNaturalLanguageTask(message, userProjects);
       logger.info('AI Chat: Task suggestion created', { taskSuggestion });
     }
 

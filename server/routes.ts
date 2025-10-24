@@ -668,8 +668,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const history: ChatMessage[] = conversationHistory || [];
       const tasks = await storage.getAllTasks({ userId });
+      const projects = await storage.getAllProjects(userId);
       
-      const response = await chatWithAI(message, history, tasks);
+      // Map projects to the format needed by AI service
+      const userProjects = projects.map(p => ({ id: p.id, name: p.name }));
+      
+      const response = await chatWithAI(message, history, tasks, userProjects);
       
       // Increment usage
       await incrementUsage('ai_chat', userId);

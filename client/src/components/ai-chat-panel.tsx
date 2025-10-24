@@ -80,12 +80,20 @@ export function AIChatPanel({ open, onOpenChange }: AIChatPanelProps) {
       if (response.taskSuggestion) {
         console.log("[AI Chat] Creating task from suggestion:", response.taskSuggestion);
         try {
-          const taskRes = await apiRequest("POST", "/api/tasks", {
+          const taskPayload: any = {
             title: response.taskSuggestion.title,
             description: response.taskSuggestion.description,
             priority: response.taskSuggestion.priority,
             status: "todo",
-          });
+          };
+          
+          // Include projectId if present
+          if (response.taskSuggestion.projectId) {
+            taskPayload.projectId = response.taskSuggestion.projectId;
+            console.log("[AI Chat] Including projectId in task:", response.taskSuggestion.projectId);
+          }
+          
+          const taskRes = await apiRequest("POST", "/api/tasks", taskPayload);
 
           if (!taskRes.ok) {
             const errorData = await taskRes.json();

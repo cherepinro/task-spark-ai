@@ -61,3 +61,37 @@ An independent FastAPI-based ML microservice calculates a user's procrastination
 - 🇬🇧 English: "Create a task to buy milk", "Add a task to call the doctor", "Remind me to..."
 
 **Files Modified**: `server/services/ai.service.ts`, `client/src/components/ai-chat-panel.tsx`
+
+### AI Project Assignment Fix (October 24, 2025)
+**Problem**: When asking AI to create tasks with project assignments in Russian (e.g., "Создай задачу купить молоко в проекте Домашние дела"), tasks were created without projectId, and title was the full prompt text.
+
+**Root Causes**:
+1. Backend called `getAllProjects({ userId })` instead of `getAllProjects(userId)` - projects not fetched
+2. OpenAI parsing returns empty content - no fallback system
+3. Frontend didn't pass projectId to POST /api/tasks - lost in transmission
+
+**Solution - Three Fixes**:
+
+1. **Fixed getAllProjects Call** (`server/routes.ts`):
+   - Changed from `getAllProjects({ userId })` to `getAllProjects(userId)`
+   - Projects now properly fetched and passed to AI
+
+2. **Added Fallback String Processing** (`server/services/ai.service.ts`):
+   - When OpenAI returns empty, uses keyword-based extraction
+   - Detects Russian: "в проекте" and English: "in project", "for project"
+   - Cleans titles: removes "Создай задачу", "Add task", etc.
+   - Matches project names case-insensitively
+
+3. **Frontend Passes projectId** (`client/src/components/ai-chat-panel.tsx`):
+   - Checks if `taskSuggestion.projectId` exists
+   - Includes projectId in POST /api/tasks payload
+   - Logs: "[AI Chat] Including projectId in task"
+
+**Result**: Complete end-to-end project assignment works in Russian and English. Tasks get clean titles and correct projectId.
+
+**Example**:
+- Input: "Создай задачу купить молоко в проекте Домашние дела"
+- Created Task: `{title: "купить молоко", projectId: "abc123", ...}`
+- Result: ✅ Task appears under "Домашние дела" project
+
+**Files Modified**: `server/routes.ts`, `server/services/ai.service.ts`, `client/src/components/ai-chat-panel.tsx`
