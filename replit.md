@@ -29,7 +29,7 @@ The API provides endpoints for:
 - Cache management
 - Swagger API documentation
 
-User authentication supports both custom email/password (with bcrypt) and Firebase Google OAuth. Sessions are managed via PostgreSQL. Role-based access control protects AI and admin endpoints. Push notifications are implemented using Firebase Cloud Messaging (FCM) for Android, including deep linking. Tasks due within the next hour trigger push notifications. The application supports full internationalization with Russian as the primary language, using `react-i18next`.
+User authentication supports custom email/password (with bcrypt) and Firebase OAuth for Google sign-in. All authentication is handled through Firebase Auth SDK on the frontend, with backend verification of Firebase ID tokens. Sessions are managed via PostgreSQL. Role-based access control protects AI and admin endpoints. Push notifications are implemented using Firebase Cloud Messaging (FCM) for Android, including deep linking. Tasks due within the next hour trigger push notifications. The application supports full internationalization with Russian as the primary language, using `react-i18next`.
 
 An independent FastAPI-based ML microservice calculates a user's procrastination score, integrated into the Express backend and displayed in the React UI with personalized tips.
 
@@ -38,7 +38,7 @@ An independent FastAPI-based ML microservice calculates a user's procrastination
 - **AI Integration**: OpenAI via Replit AI Integrations
 - **ML Service**: FastAPI microservice
 - **Push Notifications**: Firebase Cloud Messaging (FCM) via Firebase Admin SDK
-- **Authentication**: Firebase Google OAuth
+- **Authentication**: Firebase Auth (Email/Password + Google OAuth)
 - **Internationalization**: `react-i18next`
 - **Drag and Drop**: `@hello-pangea/dnd`
 
@@ -199,6 +199,34 @@ Affected schemas:
 - `shared/schema.ts` - Added nullable fields to tasks table
 - `client/src/components/task-creation-modal.tsx` - Added UI controls
 - `server/services/notification.service.ts` - Updated notification logic
+
+### Authentication System Cleanup (October 24, 2025)
+**Date**: October 24, 2025  
+**Status**: Completed
+
+**Changes**: Removed redundant Passport.js Google OAuth strategy code to simplify authentication architecture.
+
+**What Was Removed**:
+- `server/config/passport.ts` - Entire file deleted (contained unused Passport.js Google OAuth strategy)
+- Google OAuth routes (`/auth/google`, `/auth/google/callback`) from `server/auth.ts`
+- References to `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` environment variables
+
+**Current Authentication Flow**:
+- **Frontend**: Uses Firebase Auth SDK (`signInWithPopup` with Google provider)
+- **Backend**: Verifies Firebase ID tokens via `/api/auth/firebase` endpoint
+- **Session Management**: Express sessions stored in PostgreSQL
+- **No Google Cloud credentials needed** - Firebase handles entire OAuth flow
+
+**Why This Change**:
+The app had two redundant Google OAuth implementations:
+1. ✅ Firebase Auth (active, used by frontend)
+2. ❌ Passport.js Google OAuth (unused dead code, never called by frontend)
+
+Removing the unused Passport.js code eliminates confusion and simplifies the codebase. Firebase Auth natively handles Google OAuth without needing separate Google Cloud Console credentials.
+
+**Files Modified**:
+- Deleted: `server/config/passport.ts`
+- Modified: `server/auth.ts` (removed Google OAuth routes and imports)
 
 ### Admin Access
 Admin access configured for `cherepin.roman@yandex.ru` in development. Production database requires manual update to grant admin role.
