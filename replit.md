@@ -95,3 +95,43 @@ An independent FastAPI-based ML microservice calculates a user's procrastination
 - Result: ✅ Task appears under "Домашние дела" project
 
 **Files Modified**: `server/routes.ts`, `server/services/ai.service.ts`, `client/src/components/ai-chat-panel.tsx`
+
+### AI Task Decomposition as Subtasks (October 24, 2025)
+**Implementation**: Redesigned AI Task Decomposition to create subtasks within parent tasks instead of separate task entities.
+
+**Architecture Changes**:
+1. **Schema Update** (`shared/schema.ts`):
+   - Added `subtasks` JSONB column to tasks table
+   - Structure: `Array<{ title: string; hours: number; completed: boolean }>`
+   - Subtasks stored inline with parent task, not as separate records
+
+2. **Backend Changes** (`server/routes.ts`, `server/services/ai.service.ts`):
+   - Modified `/api/ai/decompose` endpoint to require `taskId` parameter
+   - Verifies task ownership before decomposition
+   - Updates parent task's `subtasks` field instead of creating new tasks
+   - Fixed: Changed `storage.getTaskById()` to `storage.getTask()` for proper task fetching
+   - Returns updated task with subtasks array
+
+3. **Frontend Changes**:
+   - Created dedicated Task Detail page (`client/src/pages/task-detail.tsx`)
+   - Route: `/tasks/:id` displays full task with subtasks section
+   - Made TaskCard titles clickable to navigate to detail page
+   - Subtasks displayed ONLY on task detail page, not in task lists
+   - Subtask completion toggles update parent task via PATCH
+   - Progress bar shows completion percentage (e.g., "3 из 7 выполнено")
+
+**User Flow**:
+1. User clicks task title → navigates to `/tasks/{id}`
+2. Clicks "Разбить на подзадачи" button (only visible on detail page)
+3. AI generates 3-7 subtasks with hour estimates
+4. Subtasks appear with checkboxes and progress tracking
+5. User toggles subtask completion
+6. Progress updates in real-time
+
+**Benefits**:
+- Cleaner data model: No duplicate task entries
+- Better organization: Subtasks tied to parent task
+- Simplified UI: Task lists show only main tasks
+- Improved UX: Detail page focuses on task execution
+
+**Files Modified**: `shared/schema.ts`, `server/routes.ts`, `server/services/ai.service.ts`, `client/src/pages/task-detail.tsx`, `client/src/components/task-card.tsx`, `client/src/App.tsx`
