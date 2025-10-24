@@ -241,20 +241,20 @@ export const insertPushTokenSchema = createInsertSchema(pushTokens).omit({
 });
 
 export type Task = typeof tasks.$inferSelect;
-export type InsertTask = z.infer<typeof insertTaskSchema>;
+export type InsertTask = typeof tasks.$inferInsert;
 export type Project = typeof projects.$inferSelect;
-export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type InsertProject = typeof projects.$inferInsert;
 export type AIInsight = typeof aiInsights.$inferSelect;
-export type InsertAIInsight = z.infer<typeof insertAIInsightSchema>;
+export type InsertAIInsight = typeof aiInsights.$inferInsert;
 export type TaskTemplate = typeof taskTemplates.$inferSelect;
-export type InsertTaskTemplate = z.infer<typeof insertTaskTemplateSchema>;
+export type InsertTaskTemplate = typeof taskTemplates.$inferInsert;
 export type QuotaUsage = typeof quotaUsage.$inferSelect;
 export type UserSettings = typeof userSettings.$inferSelect;
-export type InsertUserSettings = z.infer<typeof insertUserSettingsSchema>;
+export type InsertUserSettings = typeof userSettings.$inferInsert;
 export type UserStats = typeof userStats.$inferSelect;
-export type InsertUserStats = z.infer<typeof insertUserStatsSchema>;
+export type InsertUserStats = typeof userStats.$inferInsert;
 export type PushToken = typeof pushTokens.$inferSelect;
-export type InsertPushToken = z.infer<typeof insertPushTokenSchema>;
+export type InsertPushToken = typeof pushTokens.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type UpsertUser = typeof users.$inferInsert;
 

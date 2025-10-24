@@ -199,7 +199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const validatedData = insertTaskSchema.parse(req.body);
-      const task = await storage.createTask({ ...validatedData, userId });
+      const task = await storage.createTask({ ...validatedData, userId } as InsertTask);
       
       // Invalidate tasks cache
       dataCacheService.invalidateTasks();
@@ -332,7 +332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validatedUpdates
           .filter(({ id }) => ownershipChecks.find(c => c.id === id)?.task)
           .map(async ({ id, updates }) => {
-            return await storage.updateTask(id, updates);
+            return await storage.updateTask(id, updates as Partial<InsertTask>);
           })
       );
 
@@ -369,7 +369,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updates = updateTaskSchema.parse(req.body);
-      const task = await storage.updateTask(req.params.id, updates);
+      const task = await storage.updateTask(req.params.id, updates as Partial<InsertTask>);
       if (!task) {
         return res.status(404).json({ error: "Task not found" });
       }

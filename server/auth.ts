@@ -302,3 +302,15 @@ declare module 'express-session' {
     userId: string;
   }
 }
+
+// Extend Express Request type globally
+declare module 'express-serve-static-core' {
+  interface Request {
+    user?: {
+      id: string;
+      email: string;
+      isAdmin: boolean;
+      hasAIAccess: boolean;
+    };
+  }
+}

@@ -13,7 +13,7 @@ export interface AuthenticatedUser {
 /**
  * Authenticated request with user from session
  */
-export interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest extends Omit<Request, 'user'> {
   user?: AuthenticatedUser;
 }
 
