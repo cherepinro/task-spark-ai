@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Calendar, MoreVertical, Sparkles, FolderKanban, Repeat, Zap, Clock } from "lucide-react";
+import { Calendar, MoreVertical, Sparkles, FolderKanban, Repeat, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useLocation } from "wouter";
@@ -21,7 +21,6 @@ interface TaskCardProps {
   onEdit?: (task: Task) => void;
   onDelete?: (taskId: string) => void;
   onSaveAsTemplate?: (task: Task) => void;
-  onBreakdown?: (task: Task) => void;
 }
 
 const priorityColors = {
@@ -42,7 +41,6 @@ export function TaskCard({
   onEdit,
   onDelete,
   onSaveAsTemplate,
-  onBreakdown,
 }: TaskCardProps) {
   const isCompleted = task.status === "completed";
   const [, navigate] = useLocation();
@@ -81,7 +79,7 @@ export function TaskCard({
                 {task.title}
               </h3>
               {task.description && (
-                <p className="mt-1 text-sm text-muted-foreground line-clamp-2 break-words">
+                <p className="mt-1 text-sm text-muted-foreground line-clamp-2 break-all overflow-hidden">
                   {task.description}
                 </p>
               )}
@@ -104,15 +102,6 @@ export function TaskCard({
                 >
                   Edit
                 </DropdownMenuItem>
-                {!isCompleted && onBreakdown && (
-                  <DropdownMenuItem
-                    onClick={() => onBreakdown(task)}
-                    data-testid={`button-breakdown-task-${task.id}`}
-                  >
-                    <Zap className="h-4 w-4 mr-2 text-primary" />
-                    Breakdown Task
-                  </DropdownMenuItem>
-                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => onSaveAsTemplate?.(task)}

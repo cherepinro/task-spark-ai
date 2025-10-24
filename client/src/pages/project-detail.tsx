@@ -198,13 +198,6 @@ export default function ProjectDetail() {
     deleteTaskMutation.mutate(taskId);
   };
 
-  const handleBreakdownTask = (task: Task) => {
-    toast({
-      title: "AI Breakdown",
-      description: "This feature will break down the task into subtasks.",
-    });
-  };
-
   const handleEditProject = () => {
     setEditedProjectName(project?.name || "");
     setShowEditDialog(true);
@@ -314,7 +307,6 @@ export default function ProjectDetail() {
               onToggleComplete={handleToggleComplete}
               onEdit={handleEditTask}
               onDelete={handleDeleteTask}
-              onBreakdown={handleBreakdownTask}
             />
           ))}
         </div>

@@ -202,3 +202,27 @@ An independent FastAPI-based ML microservice calculates a user's procrastination
 - **Security**: userId requirement enforced at type level
 
 **Files Modified**: `shared/schema.ts`, `server/routes.ts`, `server/types.ts`
+
+### UI Cleanup & Layout Improvements (October 24, 2025)
+**Enhancement**: Removed "Breakdown Task" feature from context menus and fixed layout issues with long URLs.
+
+**Changes**:
+1. **Removed Breakdown Task Context Menu**:
+   - Removed "Breakdown Task" menu item from all TaskCard context menus
+   - Removed `onBreakdown` prop from TaskCard component
+   - Removed `handleBreakdownTask` functions from all pages (dashboard, today, upcoming, project-detail)
+   - Removed unused `breakdownTaskMutation` from all pages
+   - Removed unused `Zap` icon import from TaskCard
+
+2. **Fixed Long URL Layout Issues**:
+   - Changed description text class from `break-words` to `break-all`
+   - Added `overflow-hidden` to prevent text overflow
+   - Long URLs now properly wrap within task card boundaries
+   - Text breaks at any character to prevent layout overflow
+
+**Impact**:
+- **UX**: Cleaner context menus focused on essential actions (Edit, Save as Template, Delete)
+- **Layout**: Task cards now properly contain long URLs and descriptions without breaking layout
+- **Code Quality**: Removed ~150 lines of unused code across 5 files
+
+**Files Modified**: `client/src/components/task-card.tsx`, `client/src/pages/dashboard.tsx`, `client/src/pages/today.tsx`, `client/src/pages/upcoming.tsx`, `client/src/pages/project-detail.tsx`
