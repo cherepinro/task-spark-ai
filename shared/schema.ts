@@ -56,6 +56,7 @@ export const tasks = pgTable("tasks", {
   
   // Task decomposition fields
   hours: numeric("hours", { precision: 5, scale: 2 }),
+  subtasks: jsonb("subtasks").$type<Array<{ title: string; hours: number; completed: boolean }>>(),
   
   // Per-task notification settings (nullable)
   enableReminder: boolean("enable_reminder"),
