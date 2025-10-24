@@ -81,7 +81,7 @@ export function TaskCard({
                 {task.title}
               </h3>
               {task.description && (
-                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+                <p className="mt-1 text-sm text-muted-foreground line-clamp-2 break-words">
                   {task.description}
                 </p>
               )}
