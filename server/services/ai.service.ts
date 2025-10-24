@@ -174,7 +174,11 @@ export async function chatWithAI(
       ? tasks.slice(0, 3).map(t => `${t.title} (${t.priority}, ${t.status})`).join(', ')
       : "no tasks";
 
-    const systemPrompt = `You are TaskSpark AI, a task management assistant. Current tasks: ${taskSummary}. Be concise and helpful.`;
+    const systemPrompt = `You are TaskSpark AI, a task management assistant. Current tasks: ${taskSummary}. 
+
+IMPORTANT: You cannot create tasks directly. When users ask you to create a task, respond conversationally (e.g., "I'll help you create that task" or "Got it, creating a task for...") but DO NOT include task IDs or claim the task was added to the database. The system will automatically detect task creation requests and handle them separately.
+
+Be concise and helpful.`;
 
     // Filter out any messages with invalid content
     const validHistory = conversationHistory.filter(
@@ -231,12 +235,22 @@ export async function chatWithAI(
     });
 
     // Check if the message contains a task creation intent
-    const taskKeywords = ["create task", "add task", "new task", "remind me to", "i need to", "todo"];
-    const containsTaskIntent = taskKeywords.some(keyword => message.toLowerCase().includes(keyword));
+    const taskKeywords = ["create task", "add task", "new task", "remind me to", "i need to", "todo", "create a task", "add a task"];
+    const messageLower = message.toLowerCase();
+    const containsTaskIntent = taskKeywords.some(keyword => messageLower.includes(keyword));
+
+    logger.info('AI Chat: Task intent detection', {
+      message: message.substring(0, 100),
+      messageLower: messageLower.substring(0, 100),
+      containsTaskIntent,
+      matchedKeywords: taskKeywords.filter(k => messageLower.includes(k))
+    });
 
     let taskSuggestion: ParsedTask | undefined;
     if (containsTaskIntent) {
+      logger.info('AI Chat: Parsing natural language task');
       taskSuggestion = await parseNaturalLanguageTask(message);
+      logger.info('AI Chat: Task suggestion created', { taskSuggestion });
     }
 
     return {

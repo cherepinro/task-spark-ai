@@ -60,6 +60,13 @@ export function AIChatPanel({ open, onOpenChange }: AIChatPanelProps) {
       });
       const response = await res.json();
 
+      console.log("[AI Chat] Response received:", {
+        hasMessage: !!response.message,
+        hasTaskSuggestion: !!response.taskSuggestion,
+        taskSuggestion: response.taskSuggestion,
+        fullResponse: response,
+      });
+
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
@@ -71,23 +78,40 @@ export function AIChatPanel({ open, onOpenChange }: AIChatPanelProps) {
 
       // If AI suggested a task, create it
       if (response.taskSuggestion) {
+        console.log("[AI Chat] Creating task from suggestion:", response.taskSuggestion);
         try {
-          await apiRequest("POST", "/api/tasks", {
+          const taskRes = await apiRequest("POST", "/api/tasks", {
             title: response.taskSuggestion.title,
             description: response.taskSuggestion.description,
             priority: response.taskSuggestion.priority,
             status: "todo",
           });
 
+          if (!taskRes.ok) {
+            const errorData = await taskRes.json();
+            console.error("[AI Chat] Task creation failed:", errorData);
+            throw new Error(errorData.error || "Failed to create task");
+          }
+
+          const createdTask = await taskRes.json();
+          console.log("[AI Chat] Task created successfully:", createdTask);
+
           queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
 
           toast({
-            title: "Task created!",
-            description: `Created: ${response.taskSuggestion.title}`,
+            title: "Задача создана!",
+            description: `Создано: ${response.taskSuggestion.title}`,
           });
         } catch (error) {
-          console.error("Failed to create suggested task:", error);
+          console.error("[AI Chat] Failed to create suggested task:", error);
+          toast({
+            title: "Ошибка",
+            description: "Не удалось создать задачу. Попробуйте вручную.",
+            variant: "destructive",
+          });
         }
+      } else {
+        console.log("[AI Chat] No task suggestion in response");
       }
     } catch (error) {
       console.error("Chat error:", error);
