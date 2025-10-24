@@ -147,15 +147,19 @@ export default function Today() {
 
   const today = new Date();
   const todayTasks = tasks?.filter((t) => {
-    // Check both dueDate and deadlineDateTime
-    if (t.dueDate) {
-      const dueDate = new Date(t.dueDate);
-      if (dueDate.toDateString() === today.toDateString()) return true;
-    }
+    // Priority 1: Show tasks with actual deadline today
     if (t.deadlineDateTime) {
       const deadlineDate = new Date(t.deadlineDateTime);
       if (deadlineDate.toDateString() === today.toDateString()) return true;
     }
+    
+    // Priority 2: Show tasks scheduled for today ONLY if they have no deadline set
+    // This prevents low-priority tasks with distant deadlines from appearing
+    if (t.dueDate && !t.deadlineDateTime) {
+      const dueDate = new Date(t.dueDate);
+      if (dueDate.toDateString() === today.toDateString()) return true;
+    }
+    
     return false;
   }) || [];
 
