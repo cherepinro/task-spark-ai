@@ -688,14 +688,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Task Decomposition endpoint
   app.post("/api/ai/decompose", isAuthenticated, requiresAIAccess, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const { title } = req.body;
+      const { taskId, title } = req.body;
       
-      if (!title || typeof title !== "string") {
-        return res.status(400).json({ error: "Task title is required" });
+      if (!taskId || typeof taskId !== "string") {
+        return res.status(400).json({ error: "Task ID is required" });
       }
 
       // Get authenticated user ID
       const userId = req.user!.id;
+      
+      // Verify task ownership
+      const task = await storage.getTaskById(taskId);
+      if (!task || task.userId !== userId) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      
       const usageCheck = await checkUsage('ai_decompose', userId);
       
       if (!usageCheck.allowed) {
@@ -706,55 +713,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Use task title from DB or provided title
+      const taskTitle = title || task.title;
+      
       // Check cache
-      const cacheKey = md5(title.toLowerCase().trim());
+      const cacheKey = md5(taskTitle.toLowerCase().trim());
       const cached = cacheService.get<any>(cacheKey);
       
-      if (cached) {
-        return res.json({
-          ...cached,
-          fromCache: true,
-          remainingQuota: usageCheck.remaining - 1,
-        });
-      }
-
-      // Call OpenAI to decompose task
-      const result = await decomposeTask(title);
+      let subtasks: Array<{ title: string; hours: number; completed: boolean }>;
+      let tokensUsed: number;
       
-      // Save decomposed tasks to database
-      const savedTasks = await Promise.all(
-        result.tasks.map(async (task) => {
-          return await storage.createTask({
-            userId: req.user!.id,
-            title: task.title,
-            priority: "medium",
-            status: "todo",
-            hours: task.hours.toString(),
-          });
-        })
-      );
+      if (cached) {
+        subtasks = cached.subtasks;
+        tokensUsed = cached.tokensUsed;
+      } else {
+        // Call OpenAI to decompose task
+        const result = await decomposeTask(taskTitle);
+        
+        // Convert to subtask format with completed flag
+        subtasks = result.tasks.map(t => ({
+          title: t.title,
+          hours: t.hours,
+          completed: false,
+        }));
+        
+        tokensUsed = result.tokensUsed;
+        
+        // Cache the result
+        cacheService.set(cacheKey, { subtasks, tokensUsed });
+      }
+      
+      // Update task with subtasks
+      const updatedTask = await storage.updateTask(taskId, {
+        subtasks: subtasks as any,
+      });
 
       // Increment usage counter
       await incrementUsage('ai_decompose', userId);
 
-      // Prepare response
-      const response = {
-        tasks: savedTasks.map((task) => ({
-          id: task.id,
-          title: task.title,
-          hours: parseFloat(task.hours || "0"),
-        })),
-        tokensUsed: result.tokensUsed,
-        remainingQuota: usageCheck.remaining - 1,
-      };
-
-      // Cache the result
-      cacheService.set(cacheKey, response);
-
-      // Invalidate tasks cache since we created new tasks
+      // Invalidate tasks cache
       dataCacheService.invalidateTasks();
 
-      res.json(response);
+      res.json({
+        task: updatedTask,
+        subtasks,
+        tokensUsed,
+        remainingQuota: usageCheck.remaining - 1,
+        fromCache: !!cached,
+      });
     } catch (error) {
       logger.apiError('POST /api/ai/decompose', error);
       res.status(500).json({ error: "Failed to decompose task" });
