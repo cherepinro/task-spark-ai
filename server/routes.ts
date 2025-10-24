@@ -169,9 +169,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/tasks/:id", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
+      const userId = req.user!.id;
       const task = await storage.getTask(req.params.id);
       if (!task) {
         return res.status(404).json({ error: "Task not found" });
+      }
+      // Verify ownership
+      if (task.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden: You don't own this task" });
       }
       res.json(task);
     } catch (error) {
@@ -469,11 +474,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/projects/:id", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/projects/:id", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
+      const userId = req.user!.id;
       const project = await storage.getProject(req.params.id);
       if (!project) {
         return res.status(404).json({ error: "Project not found" });
+      }
+      // Verify ownership
+      if (project.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden: You don't own this project" });
       }
       res.json(project);
     } catch (error) {
@@ -1134,11 +1144,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/templates/:id", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/templates/:id", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
+      const userId = req.user!.id;
       const template = await storage.getTemplate(req.params.id);
       if (!template) {
         return res.status(404).json({ error: "Template not found" });
+      }
+      // Verify ownership
+      if (template.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden: You don't own this template" });
       }
       res.json(template);
     } catch (error) {
