@@ -1,17 +1,29 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { type Task } from "@shared/schema";
+import { type Task, type InsertTask } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Zap, Sparkles, Clock } from "lucide-react";
+import { ArrowLeft, Calendar, Zap, Sparkles, Clock, Edit2, Trash2, Save } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
+import { TaskCreationModal } from "@/components/task-creation-modal";
+import { SaveTemplateDialog } from "@/components/save-template-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const priorityBadgeColors = {
   low: "bg-chart-2/10 text-chart-2",
@@ -32,6 +44,9 @@ export default function TaskDetail() {
   const { toast } = useToast();
   const { t } = useTranslation();
   const [isDecomposing, setIsDecomposing] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
 
   const { data: task, isLoading } = useQuery<Task>({
     queryKey: ["/api/tasks", id],
@@ -82,6 +97,78 @@ export default function TaskDetail() {
     },
   });
 
+  const updateTaskMutation = useMutation({
+    mutationFn: async (data: InsertTask) => {
+      const response = await apiRequest("PATCH", `/api/tasks/${id}`, data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks", id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      toast({
+        title: "Задача обновлена",
+        description: "Изменения сохранены успешно",
+      });
+      setShowEditModal(false);
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Ошибка",
+        description: error.message || "Не удалось обновить задачу",
+      });
+    },
+  });
+
+  const deleteTaskMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", `/api/tasks/${id}`, undefined);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      toast({
+        title: "Задача удалена",
+        description: "Задача успешно удалена",
+      });
+      navigate("/");
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Ошибка",
+        description: error.message || "Не удалось удалить задачу",
+      });
+    },
+  });
+
+  const saveTemplateMutation = useMutation({
+    mutationFn: async (templateName: string) => {
+      const response = await apiRequest("POST", "/api/templates", {
+        title: templateName,
+        description: task?.description || "",
+        defaultPriority: task?.priority || "medium",
+        defaultCategory: task?.aiCategory || null,
+        defaultHours: task?.hours || null,
+      });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/templates"] });
+      toast({
+        title: "Шаблон сохранен",
+        description: "Шаблон задачи успешно создан",
+      });
+      setShowTemplateDialog(false);
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Ошибка",
+        description: error.message || "Не удалось сохранить шаблон",
+      });
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-6">
@@ -115,21 +202,65 @@ export default function TaskDetail() {
     decomposeTaskMutation.mutate();
   };
 
+  const handleUpdateTask = async (data: InsertTask) => {
+    await updateTaskMutation.mutateAsync(data);
+  };
+
+  const handleDelete = () => {
+    deleteTaskMutation.mutate();
+  };
+
+  const handleSaveTemplate = (templateName: string) => {
+    saveTemplateMutation.mutate(templateName);
+  };
+
   const completedSubtasks = task.subtasks?.filter(st => st.completed).length || 0;
   const totalSubtasks = task.subtasks?.length || 0;
   const subtaskProgress = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0;
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
-      <Button
-        variant="ghost"
-        onClick={() => navigate(-1)}
-        className="mb-4"
-        data-testid="button-back"
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Назад
-      </Button>
+      <div className="flex items-center justify-between mb-4">
+        <Button
+          variant="ghost"
+          onClick={() => navigate("/")}
+          data-testid="button-back"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Назад
+        </Button>
+        
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowEditModal(true)}
+            data-testid="button-edit-task"
+          >
+            <Edit2 className="h-4 w-4 mr-2" />
+            Редактировать
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowTemplateDialog(true)}
+            data-testid="button-save-template"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Сохранить как шаблон
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDeleteDialog(true)}
+            className="text-destructive hover:bg-destructive/10"
+            data-testid="button-delete-task"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Удалить
+          </Button>
+        </div>
+      </div>
 
       <Card className="p-6 space-y-6">
         {/* Task Header */}
@@ -254,6 +385,46 @@ export default function TaskDetail() {
           )}
         </div>
       </Card>
+
+      {/* Edit Task Modal */}
+      {showEditModal && task && (
+        <TaskCreationModal
+          open={showEditModal}
+          onOpenChange={setShowEditModal}
+          onSubmit={handleUpdateTask}
+          initialTask={task}
+        />
+      )}
+
+      {/* Save Template Dialog */}
+      <SaveTemplateDialog
+        open={showTemplateDialog}
+        onOpenChange={setShowTemplateDialog}
+        onSave={handleSaveTemplate}
+        task={task || null}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить задачу?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Это действие нельзя отменить. Задача будет удалена навсегда.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive hover:bg-destructive/90"
+              data-testid="button-confirm-delete"
+            >
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
