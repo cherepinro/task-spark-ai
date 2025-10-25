@@ -168,8 +168,6 @@ export default function Upcoming() {
                       key={task.id}
                       task={task}
                       onToggleComplete={handleToggleComplete}
-                      onEdit={handleEditTask}
-                      onDelete={(id) => deleteTaskMutation.mutate(id)}
                     />
                   ))}
                 </div>

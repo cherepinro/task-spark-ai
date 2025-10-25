@@ -2,15 +2,7 @@ import { type Task } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { Calendar, MoreVertical, Sparkles, FolderKanban, Repeat, Clock } from "lucide-react";
+import { Calendar, Sparkles, FolderKanban, Repeat, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useLocation } from "wouter";
@@ -18,9 +10,6 @@ import { useLocation } from "wouter";
 interface TaskCardProps {
   task: Task;
   onToggleComplete?: (taskId: string) => void;
-  onEdit?: (task: Task) => void;
-  onDelete?: (taskId: string) => void;
-  onSaveAsTemplate?: (task: Task) => void;
 }
 
 const priorityColors = {
@@ -38,9 +27,6 @@ const priorityBadgeColors = {
 export function TaskCard({
   task,
   onToggleComplete,
-  onEdit,
-  onDelete,
-  onSaveAsTemplate,
 }: TaskCardProps) {
   const isCompleted = task.status === "completed";
   const [, navigate] = useLocation();
@@ -52,72 +38,39 @@ export function TaskCard({
   return (
     <Card
       className={cn(
-        "group relative border-l-4 p-4 hover-elevate transition-all",
+        "group relative border-l-4 p-4 hover-elevate transition-all cursor-pointer",
         priorityColors[task.priority as keyof typeof priorityColors],
         isCompleted && "opacity-60"
       )}
       data-testid={`card-task-${task.id}`}
+      onClick={handleNavigateToTask}
     >
       <div className="flex items-start gap-3">
         <Checkbox
           checked={isCompleted}
-          onCheckedChange={() => onToggleComplete?.(task.id)}
+          onCheckedChange={(checked) => {
+            onToggleComplete?.(task.id);
+          }}
+          onClick={(e) => e.stopPropagation()}
           className="mt-0.5"
           data-testid={`checkbox-task-${task.id}`}
         />
         <div className="flex-1 space-y-2">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1">
-              <h3
-                className={cn(
-                  "text-base font-medium leading-tight cursor-pointer hover:text-primary transition-colors",
-                  isCompleted && "line-through"
-                )}
-                onClick={handleNavigateToTask}
-                data-testid={`text-task-title-${task.id}`}
-              >
-                {task.title}
-              </h3>
-              {task.description && (
-                <p className="mt-1 text-sm text-muted-foreground line-clamp-2 break-all overflow-hidden">
-                  {task.description}
-                </p>
+          <div className="flex-1">
+            <h3
+              className={cn(
+                "text-base font-medium leading-tight",
+                isCompleted && "line-through"
               )}
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                  data-testid={`button-task-menu-${task.id}`}
-                >
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => onEdit?.(task)}
-                  data-testid={`button-edit-task-${task.id}`}
-                >
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => onSaveAsTemplate?.(task)}
-                  data-testid={`button-save-as-template-${task.id}`}
-                >
-                  Save as Template
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onDelete?.(task.id)}
-                  className="text-destructive"
-                  data-testid={`button-delete-task-${task.id}`}
-                >
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              data-testid={`text-task-title-${task.id}`}
+            >
+              {task.title}
+            </h3>
+            {task.description && (
+              <p className="mt-1 text-sm text-muted-foreground line-clamp-2 break-all overflow-hidden">
+                {task.description}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">

@@ -305,8 +305,6 @@ export default function ProjectDetail() {
               key={task.id}
               task={task}
               onToggleComplete={handleToggleComplete}
-              onEdit={handleEditTask}
-              onDelete={handleDeleteTask}
             />
           ))}
         </div>

@@ -181,9 +181,6 @@ export default function Today() {
                 key={task.id}
                 task={task}
                 onToggleComplete={handleToggleComplete}
-                onEdit={handleEditTask}
-                onDelete={(id) => deleteTaskMutation.mutate(id)}
-                onSaveAsTemplate={handleSaveAsTemplate}
               />
             ))}
           </div>
