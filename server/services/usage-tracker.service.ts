@@ -7,8 +7,8 @@ export const USAGE_LIMITS = {
   ai_decompose: { monthly: 5, label: "AI Task Breakdown" },
   bulk_import: { monthly: 20, label: "Bulk Task Import" },
   ai_chat: { monthly: 50, label: "AI Chat Messages" },
-  day_plan: { daily: 1, label: "AI Day Planner" },
-  ai_reorganize: { daily: 1, label: "AI Reorganize (Eisenhower)" },
+  day_plan: { daily: 5, label: "AI Day Planner" },
+  ai_reorganize: { daily: 5, label: "AI Reorganize (Eisenhower)" },
   tasks: { total: 500, label: "Total Tasks" },
   projects: { total: 50, label: "Total Projects" },
 } as const;
