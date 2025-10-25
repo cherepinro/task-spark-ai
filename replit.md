@@ -1,7 +1,7 @@
 # TaskSpark AI
 
 ## Overview
-TaskSpark AI is an intelligent task management application available as a web and native Android mobile app. It helps users organize, prioritize, and manage tasks with AI-powered categorization, insights, and productivity analytics. The project aims to provide a clear, fast, and minimally decorated user experience, inspired by Linear and Notion, to enhance user productivity and organization.
+TaskSpark AI is an intelligent task management application available as a web and native Android mobile app. It helps users organize, prioritize, and manage tasks with AI-powered categorization, insights, and productivity analytics. The project aims to provide a clear, fast, and minimally decorated user experience, inspired by Linear and Notion, to enhance user productivity and organization. Key capabilities include a dynamic Dashboard, comprehensive Task Management (CRUD, search, filtering, recurring tasks, templates, deadline datetime), and advanced AI features such as smart categorization, priority suggestions, natural language parsing, productivity insights, AI-optimized Day Planning, and AI Task Decomposition.
 
 ## User Preferences
 - Prioritize visual excellence and polish
@@ -14,17 +14,18 @@ TaskSpark AI is an intelligent task management application available as a web an
 ## System Architecture
 TaskSpark AI employs a modern full-stack architecture. The frontend uses React 18, TypeScript, Vite, Tailwind CSS, and Shadcn UI, with Capacitor 7.4+ for the native Android app. State management is handled by TanStack Query (React Query v5), routing by Wouter, and form handling by React Hook Form + Zod. The backend is an Express.js + TypeScript application.
 
-Core features include a dynamic Dashboard, comprehensive Task Management (CRUD, search, filtering, recurring tasks, templates, deadline datetime), and advanced AI capabilities such as smart categorization, priority suggestions, natural language parsing, productivity insights, AI-optimized Day Planning, and AI Task Decomposition. A "Focus Sprint" feature and robust AI usage tracking are also included.
-
 The design system features a dark mode palette with purple accents for AI elements, using Inter and JetBrains Mono fonts. Shadcn UI components are themed to achieve a Linear + Notion hybrid aesthetic.
 
-Data models for `Task`, `Project`, `AIInsight`, `TaskTemplate`, `UserSettings`, and `UserStats` support features like recurrence, AI suggestions, and usage statistics.
+Core features include:
+- **Task Management**: CRUD operations, search, filtering, recurring tasks, templates, deadline management.
+- **AI Capabilities**: Smart categorization, priority suggestions, natural language parsing, productivity insights, AI-optimized Day Planning, AI Task Decomposition into subtasks (stored as JSONB within the parent task).
+- **Focus Sprint** feature.
+- **User Authentication**: Custom email/password (with bcrypt) and Firebase OAuth for Google sign-in. Firebase Auth SDK for frontend, backend verification of Firebase ID tokens. Sessions managed via PostgreSQL. Role-based access control for AI and admin endpoints.
+- **Internationalization**: Full support with `react-i18next`, Russian as primary.
 
-The API provides endpoints for Task and Project management, various AI features (suggest, parse, chat, decompose, day-plan), ML features (procrastination score), Templates, Usage, Statistics, Push Notifications, and Cache management, with Swagger documentation.
+Data models for `Task`, `Project`, `AIInsight`, `TaskTemplate`, `UserSettings`, and `UserStats` support features like recurrence, AI suggestions, and usage statistics. The API provides endpoints for Task and Project management, various AI features (suggest, parse, chat, decompose, day-plan), ML features (procrastination score), Templates, Usage, Statistics, Push Notifications, and Cache management, with Swagger documentation.
 
-User authentication supports custom email/password (with bcrypt) and Firebase OAuth for Google sign-in. Firebase Auth SDK handles frontend authentication, with backend verification of Firebase ID tokens. Sessions are managed via PostgreSQL. Role-based access control protects AI and admin endpoints. Push notifications are implemented via Firebase Cloud Messaging (FCM) for Android, including deep linking, with notifications for tasks due within the next hour. The application supports full internationalization with Russian as the primary language using `react-i18next`.
-
-An independent FastAPI-based ML microservice calculates a user's procrastination score, integrated with the Express backend and displayed in the React UI.
+A separate FastAPI-based ML microservice calculates a user's procrastination score, integrated with the Express backend and displayed in the React UI.
 
 ## External Dependencies
 - **Database**: PostgreSQL (Neon) with Drizzle ORM
@@ -34,195 +35,3 @@ An independent FastAPI-based ML microservice calculates a user's procrastination
 - **Authentication**: Firebase Auth (Email/Password + Google OAuth)
 - **Internationalization**: `react-i18next`
 - **Drag and Drop**: `@hello-pangea/dnd`
-
-## Recent Fixes
-
-### AI Chat Task Creation Fix (October 24, 2025)
-**Problem**: AI Assistant claimed to create tasks but they didn't appear. After deployment, task creation completely stopped working when OpenAI returned empty responses. Additionally, Russian language input didn't work at all.
-
-**Root Causes**:
-1. AI hallucinated fake task IDs
-2. Empty OpenAI responses blocked task intent detection
-3. Limited keyword detection ("create task" but not "create a task")
-4. **NO Russian language support** - only English keywords were detected
-
-**Solution**:
-- Reordered logic: task intent detection happens FIRST, before checking AI response
-- Enhanced English keywords: "create a task", "add a task", "remind me to", etc.
-- **Added Russian keywords**: "создай задачу", "добавь задачу", "напомни мне", "мне нужно", "новая задача", etc.
-- Improved system prompt to prevent AI hallucination
-- Resilient to empty API responses - tasks created even when OpenAI fails
-- Russian error/success toasts, comprehensive logging
-
-**Result**: Task creation works consistently in **both Russian and English**, even with API failures. Tasks appear immediately in list.
-
-**Supported Languages**:
-- 🇷🇺 Russian: "Создай задачу купить молоко", "Добавь задачу позвонить врачу", "Напомни мне..."
-- 🇬🇧 English: "Create a task to buy milk", "Add a task to call the doctor", "Remind me to..."
-
-**Files Modified**: `server/services/ai.service.ts`, `client/src/components/ai-chat-panel.tsx`
-
-### AI Project Assignment Fix (October 24, 2025)
-**Problem**: When asking AI to create tasks with project assignments in Russian (e.g., "Создай задачу купить молоко в проекте Домашние дела"), tasks were created without projectId, and title was the full prompt text.
-
-**Root Causes**:
-1. Backend called `getAllProjects({ userId })` instead of `getAllProjects(userId)` - projects not fetched
-2. OpenAI parsing returns empty content - no fallback system
-3. Frontend didn't pass projectId to POST /api/tasks - lost in transmission
-
-**Solution - Three Fixes**:
-
-1. **Fixed getAllProjects Call** (`server/routes.ts`):
-   - Changed from `getAllProjects({ userId })` to `getAllProjects(userId)`
-   - Projects now properly fetched and passed to AI
-
-2. **Added Fallback String Processing** (`server/services/ai.service.ts`):
-   - When OpenAI returns empty, uses keyword-based extraction
-   - Detects Russian: "в проекте" and English: "in project", "for project"
-   - Cleans titles: removes "Создай задачу", "Add task", etc.
-   - Matches project names case-insensitively
-
-3. **Frontend Passes projectId** (`client/src/components/ai-chat-panel.tsx`):
-   - Checks if `taskSuggestion.projectId` exists
-   - Includes projectId in POST /api/tasks payload
-   - Logs: "[AI Chat] Including projectId in task"
-
-**Result**: Complete end-to-end project assignment works in Russian and English. Tasks get clean titles and correct projectId.
-
-**Example**:
-- Input: "Создай задачу купить молоко в проекте Домашние дела"
-- Created Task: `{title: "купить молоко", projectId: "abc123", ...}`
-- Result: ✅ Task appears under "Домашние дела" project
-
-**Files Modified**: `server/routes.ts`, `server/services/ai.service.ts`, `client/src/components/ai-chat-panel.tsx`
-
-### AI Task Decomposition as Subtasks (October 24, 2025)
-**Implementation**: Redesigned AI Task Decomposition to create subtasks within parent tasks instead of separate task entities.
-
-**Architecture Changes**:
-1. **Schema Update** (`shared/schema.ts`):
-   - Added `subtasks` JSONB column to tasks table
-   - Structure: `Array<{ title: string; hours: number; completed: boolean }>`
-   - Subtasks stored inline with parent task, not as separate records
-
-2. **Backend Changes** (`server/routes.ts`, `server/services/ai.service.ts`):
-   - Modified `/api/ai/decompose` endpoint to require `taskId` parameter
-   - Verifies task ownership before decomposition
-   - Updates parent task's `subtasks` field instead of creating new tasks
-   - Fixed: Changed `storage.getTaskById()` to `storage.getTask()` for proper task fetching
-   - Returns updated task with subtasks array
-
-3. **Frontend Changes**:
-   - Created dedicated Task Detail page (`client/src/pages/task-detail.tsx`)
-   - Route: `/tasks/:id` displays full task with subtasks section
-   - Made TaskCard titles clickable to navigate to detail page
-   - Subtasks displayed ONLY on task detail page, not in task lists
-   - Subtask completion toggles update parent task via PATCH
-   - Progress bar shows completion percentage (e.g., "3 из 7 выполнено")
-
-**User Flow**:
-1. User clicks task title → navigates to `/tasks/{id}`
-2. Clicks "Разбить на подзадачи" button (only visible on detail page)
-3. AI generates 3-7 subtasks with hour estimates
-4. Subtasks appear with checkboxes and progress tracking
-5. User toggles subtask completion
-6. Progress updates in real-time
-
-**Benefits**:
-- Cleaner data model: No duplicate task entries
-- Better organization: Subtasks tied to parent task
-- Simplified UI: Task lists show only main tasks
-- Improved UX: Detail page focuses on task execution
-
-**Files Modified**: `shared/schema.ts`, `server/routes.ts`, `server/services/ai.service.ts`, `client/src/pages/task-detail.tsx`, `client/src/components/task-card.tsx`, `client/src/App.tsx`
-
-### Security & Code Quality Improvements (October 24, 2025)
-**Critical Security Fixes**: Fixed data leakage vulnerabilities where users could access other users' resources by guessing IDs.
-
-**Security Issues Fixed**:
-1. **GET /api/tasks/:id** - Missing userId ownership verification
-   - Before: Any authenticated user could fetch any task by ID
-   - After: Returns 403 Forbidden if task.userId !== req.user.id
-   
-2. **GET /api/projects/:id** - Missing userId ownership verification
-   - Before: Any authenticated user could fetch any project by ID
-   - After: Returns 403 Forbidden if project.userId !== req.user.id
-   
-3. **GET /api/templates/:id** - Missing userId ownership verification
-   - Before: Any authenticated user could fetch any template by ID
-   - After: Returns 403 Forbidden if template.userId !== req.user.id
-
-**Code Quality Improvements**:
-1. Removed all `console.log` statements from `client/src/components/ai-chat-panel.tsx`
-2. Cleaned up debug logging in production code
-3. Added `break-words` class to TaskCard descriptions for proper long URL wrapping
-
-**Impact**:
-- **Security**: Prevents unauthorized access to user data via direct API calls
-- **Privacy**: Users can only access their own tasks, projects, and templates
-- **Code Quality**: Cleaner codebase without debug logging clutter
-
-**Verification**:
-- Comprehensive regression tests passed
-- Cross-user access properly blocked (403 errors)
-- Own resource access works correctly (200 success)
-- All core features (CRUD, AI decomposition, navigation) functioning normally
-
-**Files Modified**: `server/routes.ts`, `client/src/components/ai-chat-panel.tsx`, `client/src/components/task-card.tsx`
-
-### TypeScript Type System Improvements (October 24, 2025)
-**Enhancement**: Resolved TypeScript compilation warnings and standardized type system for better type safety.
-
-**Changes**:
-1. **Express Type Augmentation** (`server/types.ts`):
-   - Added proper Express module augmentation to extend `Request` interface
-   - Defined `AuthenticatedRequest` type with required `user` property
-   - Eliminated TypeScript warnings about missing `user` property
-
-2. **Drizzle Type System** (`shared/schema.ts`):
-   - Changed all `Insert*` types to use `$inferInsert` from Drizzle tables
-   - Previous: `export type InsertTask = z.infer<typeof insertTaskSchema>`
-   - Current: `export type InsertTask = typeof tasks.$inferInsert`
-   - Now properly includes `userId` and all required fields from database schema
-
-3. **Type Assertions** (`server/routes.ts`):
-   - Added `as InsertTask` assertions when spreading Zod-validated data
-   - Added `as Partial<InsertTask>` for update operations
-   - Resolves type compatibility between Zod schemas and Drizzle types
-
-**Separation of Concerns**:
-- **Zod schemas** (`insertTaskSchema`, etc.): Client input validation only
-- **Drizzle types** (`InsertTask`, etc.): Database operations with full field set
-- Routes validate with Zod, then add `userId` to match Drizzle types
-
-**Benefits**:
-- **Type Safety**: Full TypeScript coverage with no compilation errors
-- **Consistency**: Database schema is single source of truth for types
-- **Maintainability**: Changes to schema automatically reflect in Insert types
-- **Security**: userId requirement enforced at type level
-
-**Files Modified**: `shared/schema.ts`, `server/routes.ts`, `server/types.ts`
-
-### UI Cleanup & Layout Improvements (October 24, 2025)
-**Enhancement**: Removed "Breakdown Task" feature from context menus and fixed layout issues with long URLs.
-
-**Changes**:
-1. **Removed Breakdown Task Context Menu**:
-   - Removed "Breakdown Task" menu item from all TaskCard context menus
-   - Removed `onBreakdown` prop from TaskCard component
-   - Removed `handleBreakdownTask` functions from all pages (dashboard, today, upcoming, project-detail)
-   - Removed unused `breakdownTaskMutation` from all pages
-   - Removed unused `Zap` icon import from TaskCard
-
-2. **Fixed Long URL Layout Issues**:
-   - Changed description text class from `break-words` to `break-all`
-   - Added `overflow-hidden` to prevent text overflow
-   - Long URLs now properly wrap within task card boundaries
-   - Text breaks at any character to prevent layout overflow
-
-**Impact**:
-- **UX**: Cleaner context menus focused on essential actions (Edit, Save as Template, Delete)
-- **Layout**: Task cards now properly contain long URLs and descriptions without breaking layout
-- **Code Quality**: Removed ~150 lines of unused code across 5 files
-
-**Files Modified**: `client/src/components/task-card.tsx`, `client/src/pages/dashboard.tsx`, `client/src/pages/today.tsx`, `client/src/pages/upcoming.tsx`, `client/src/pages/project-detail.tsx`
