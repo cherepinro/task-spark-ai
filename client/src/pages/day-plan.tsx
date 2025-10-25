@@ -134,6 +134,14 @@ export default function DayPlan() {
     );
   };
 
+  const handleSelectAll = () => {
+    if (selectedTasks.length === availableTasks.length) {
+      setSelectedTasks([]);
+    } else {
+      setSelectedTasks(availableTasks.map((task: any) => task.id));
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="p-6">
@@ -168,7 +176,19 @@ export default function DayPlan() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Task Selection */}
         <Card className="p-4 lg:col-span-1">
-          <h2 className="font-semibold mb-3">Select Tasks</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold">Select Tasks</h2>
+            {availableTasks.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSelectAll}
+                data-testid="button-select-all"
+              >
+                {selectedTasks.length === availableTasks.length ? "Deselect All" : "Select All"}
+              </Button>
+            )}
+          </div>
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {availableTasks.length === 0 ? (
               <p className="text-sm text-muted-foreground">No tasks available</p>
