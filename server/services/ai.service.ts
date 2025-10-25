@@ -487,24 +487,27 @@ Rules:
 4. Each time block should be 30-60 minutes
 5. Include buffer time for transitions
 6. Return time blocks in chronological order
+7. IMPORTANT: You MUST include ALL tasks in the schedule
 
 Return ONLY a valid JSON array of time blocks with this structure:
 [
   {
-    "id": "unique-id",
-    "time": "HH:MM",
+    "id": "block-1",
+    "time": "08:00",
     "duration": 60,
-    "taskId": "task-id-or-null",
-    "title": "Task or activity name",
-    "type": "task|habit|busy|free",
-    "description": "Optional details"
+    "taskId": "task-id-123",
+    "title": "Task title",
+    "type": "task",
+    "description": "Task details"
   }
-]`;
+]
+
+CRITICAL: The response must be a valid JSON array. Include at least one time block for each task provided.`;
 
   const userPrompt = `Create a day plan with these inputs:
 
-Tasks:
-${input.tasks.map(t => `- ${t.title} (Priority: ${t.priority || 'medium'}, Hours: ${t.hours || '1'})`).join('\n')}
+Tasks to schedule:
+${input.tasks.map((t, i) => `${i + 1}. ID: ${t.id}, Title: "${t.title}", Priority: ${t.priority || 'medium'}, Hours: ${t.hours || '1'}`).join('\n')}
 
 ${input.habits && input.habits.length > 0 ? `Habits:
 ${input.habits.map(h => `- ${h.title} (${h.duration} min)`).join('\n')}` : ''}
@@ -512,28 +515,112 @@ ${input.habits.map(h => `- ${h.title} (${h.duration} min)`).join('\n')}` : ''}
 ${input.busySlots && input.busySlots.length > 0 ? `Busy Time Slots:
 ${input.busySlots.map(b => `- ${b.time} for ${b.duration} min: ${b.title}`).join('\n')}` : ''}
 
-Generate an optimized daily schedule from 08:00 to 22:00.`;
+Generate an optimized daily schedule from 08:00 to 22:00. Include ALL ${input.tasks.length} tasks in the schedule.`;
 
-  // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
-  const response = await openai.chat.completions.create({
-    model: "gpt-5",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-    // GPT-5 only supports default temperature of 1, cannot customize
-    max_completion_tokens: 2000,
+  logger.debug("Generating day plan", { 
+    taskCount: input.tasks.length,
+    tasks: input.tasks.map(t => t.title)
   });
 
-  const content = response.choices[0]?.message?.content || "[]";
-  
   try {
-    const blocks = JSON.parse(content) as TimeBlock[];
+    // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+    const response = await openai.chat.completions.create({
+      model: "gpt-5",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      // GPT-5 only supports default temperature of 1, cannot customize
+      max_completion_tokens: 2000,
+    });
+
+    const content = response.choices[0]?.message?.content || "[]";
+    
+    logger.debug("Day plan AI response received", { 
+      responseLength: content.length,
+      preview: content.substring(0, 200)
+    });
+    
+    // Try to parse the response
+    let blocks: TimeBlock[] = [];
+    
+    try {
+      blocks = JSON.parse(content) as TimeBlock[];
+    } catch (parseError) {
+      logger.serviceError('ai', 'generateDayPlan - JSON parse failed', parseError, { 
+        response: content?.substring(0, 500) 
+      });
+      // Fall through to fallback
+    }
+
+    // If AI returned empty array or parsing failed, use fallback
+    if (!blocks || blocks.length === 0) {
+      logger.warn("AI returned empty day plan, using fallback generator");
+      blocks = generateFallbackDayPlan(input);
+    }
+
+    logger.info("Day plan generated successfully", { blockCount: blocks.length });
     return blocks;
+    
   } catch (error) {
-    logger.serviceError('ai', 'generateDayPlan', error, { response: content?.substring(0, 100) });
-    throw new Error("Failed to generate day plan");
+    logger.serviceError('ai', 'generateDayPlan - API call failed', error);
+    // Use fallback on any error
+    logger.warn("Using fallback day plan due to API error");
+    return generateFallbackDayPlan(input);
   }
+}
+
+// Fallback day plan generator when AI fails or returns empty results
+function generateFallbackDayPlan(input: DayPlanInput): TimeBlock[] {
+  const blocks: TimeBlock[] = [];
+  let currentTime = 8 * 60; // Start at 08:00 (in minutes)
+  const endTime = 22 * 60; // End at 22:00 (in minutes)
+  
+  logger.debug("Generating fallback day plan", { taskCount: input.tasks.length });
+
+  // Sort tasks by priority (high first)
+  const sortedTasks = [...input.tasks].sort((a, b) => {
+    const priorityOrder = { high: 0, medium: 1, low: 2 };
+    const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 1;
+    const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 1;
+    return aPriority - bPriority;
+  });
+
+  // Schedule each task
+  for (const task of sortedTasks) {
+    if (currentTime >= endTime) break;
+
+    const hours = parseFloat(task.hours || '1');
+    const duration = Math.min(Math.round(hours * 60), 120); // Max 2 hours per block
+    
+    const blockTime = formatMinutesToTime(currentTime);
+    
+    blocks.push({
+      id: `block-${task.id}`,
+      time: blockTime,
+      duration: duration,
+      taskId: task.id,
+      title: task.title,
+      type: "task",
+      description: task.description
+    });
+
+    currentTime += duration;
+    
+    // Add 10-minute break between tasks
+    if (currentTime < endTime - 10) {
+      currentTime += 10;
+    }
+  }
+
+  return blocks;
+}
+
+// Helper function to format minutes to HH:MM
+function formatMinutesToTime(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
 }
 
 export interface ReorganizeSuggestion {
