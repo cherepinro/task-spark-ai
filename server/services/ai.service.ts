@@ -660,42 +660,117 @@ Return ONLY a valid JSON object with a suggestions array:
   ]
 }
 
-IMPORTANT: You must provide exactly one suggestion for each task. Every task must be classified into one of the four quadrants.`;
+CRITICAL: You MUST provide exactly one suggestion for each task. Every task must be classified into one of the four quadrants. Do not return an empty array.`;
 
   const userPrompt = `User's 7-day completion ratio: ${(input.completedRatio7d * 100).toFixed(0)}%
 
-Tasks to reorganize:
+Tasks to reorganize (you MUST classify ALL ${input.tasks.length} tasks):
 ${input.tasks.map((t, i) => `${i + 1}. [${t.id}] "${t.title}" (Priority: ${t.priority || 'medium'}, Status: ${t.status || 'todo'}${t.dueDate ? `, Due: ${t.dueDate}` : ''}${t.description ? `, Description: ${t.description}` : ''})`).join('\n')}
 
-Apply Eisenhower Matrix principles and classify EACH task into the appropriate quadrant.`;
+Apply Eisenhower Matrix principles and classify EACH of the ${input.tasks.length} tasks into the appropriate quadrant. Return ${input.tasks.length} suggestions.`;
 
   logger.debug("Reorganizing tasks", { 
     taskCount: input.tasks.length, 
-    completionRate: `${(input.completedRatio7d * 100).toFixed(0)}%` 
+    completionRate: `${(input.completedRatio7d * 100).toFixed(0)}%`,
+    tasks: input.tasks.map(t => ({ id: t.id, title: t.title, priority: t.priority }))
   });
 
-  // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
-  const response = await openai.chat.completions.create({
-    model: "gpt-5",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-    response_format: { type: "json_object" },
-    max_completion_tokens: 1500,
-  });
-
-  const content = response.choices[0]?.message?.content || "{}";
-  logger.debug("AI reorganize response received", { preview: content.substring(0, 200) });
-  
   try {
-    const parsed = JSON.parse(content);
-    // Handle both array and object responses
-    const suggestions = Array.isArray(parsed) ? parsed : (parsed.suggestions || []);
-    logger.debug("Parsed reorganization suggestions", { count: suggestions.length });
-    return suggestions as ReorganizeSuggestion[];
+    // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+    const response = await openai.chat.completions.create({
+      model: "gpt-5",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      response_format: { type: "json_object" },
+      max_completion_tokens: 1500,
+    });
+
+    const content = response.choices[0]?.message?.content || "{}";
+    logger.debug("AI reorganize response received", { 
+      responseLength: content.length,
+      preview: content.substring(0, 200) 
+    });
+    
+    let suggestions: ReorganizeSuggestion[] = [];
+    
+    try {
+      const parsed = JSON.parse(content);
+      // Handle both array and object responses
+      suggestions = Array.isArray(parsed) ? parsed : (parsed.suggestions || []);
+    } catch (parseError) {
+      logger.serviceError('ai', 'reorganizeTasks - JSON parse failed', parseError, { 
+        response: content?.substring(0, 500) 
+      });
+      // Fall through to fallback
+    }
+
+    // If AI returned empty array or parsing failed, use fallback
+    if (!suggestions || suggestions.length === 0) {
+      logger.warn("AI returned empty reorganization suggestions, using fallback");
+      suggestions = generateFallbackReorganization(input);
+    }
+
+    logger.info("Task reorganization completed", { 
+      suggestionCount: suggestions.length,
+      requestedCount: input.tasks.length 
+    });
+    
+    return suggestions;
+    
   } catch (error) {
-    logger.serviceError('ai', 'reorganizeTasks', error, { response: content });
-    throw new Error("Failed to reorganize tasks");
+    logger.serviceError('ai', 'reorganizeTasks - API call failed', error);
+    // Use fallback on any error
+    logger.warn("Using fallback reorganization due to API error");
+    return generateFallbackReorganization(input);
   }
+}
+
+// Fallback reorganization when AI fails or returns empty results
+function generateFallbackReorganization(input: ReorganizeInput): ReorganizeSuggestion[] {
+  logger.debug("Generating fallback reorganization", { taskCount: input.tasks.length });
+  
+  const suggestions: ReorganizeSuggestion[] = [];
+  const now = new Date();
+
+  for (const task of input.tasks) {
+    const priority = task.priority || 'medium';
+    const status = task.status || 'todo';
+    const dueDate = task.dueDate ? new Date(task.dueDate) : null;
+    
+    // Check if task is overdue or due soon (within 3 days)
+    const isOverdue = dueDate && dueDate < now;
+    const isDueSoon = dueDate && !isOverdue && dueDate <= new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+    const isUrgent = isOverdue || isDueSoon;
+    
+    // Determine quadrant based on priority and urgency
+    let quadrant: ReorganizeSuggestion['quadrant'];
+    let reason: string;
+    
+    if (priority === 'high' && isUrgent) {
+      quadrant = 'urgent-important';
+      reason = isOverdue ? 'Overdue, high priority' : 'Due soon, high priority';
+    } else if (priority === 'high' && !isUrgent) {
+      quadrant = 'important';
+      reason = 'High priority, schedule time';
+    } else if (priority === 'medium' && isUrgent) {
+      quadrant = 'urgent';
+      reason = isOverdue ? 'Overdue, act quickly' : 'Due soon';
+    } else if (priority === 'low' || (!isUrgent && priority === 'medium')) {
+      quadrant = 'not-urgent';
+      reason = priority === 'low' ? 'Low priority task' : 'Can be scheduled later';
+    } else {
+      quadrant = 'important';
+      reason = 'Needs planning';
+    }
+    
+    suggestions.push({
+      id: task.id,
+      quadrant,
+      reason
+    });
+  }
+  
+  return suggestions;
 }
