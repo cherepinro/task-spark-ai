@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
-import { Calendar, Download, Sparkles, Clock, Zap } from "lucide-react";
+import { Calendar, Download, Sparkles, Clock, Zap, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import type { Task } from "@shared/schema";
 
 interface TimeBlock {
   id: string;
@@ -18,6 +19,23 @@ interface TimeBlock {
   title: string;
   type: "task" | "habit" | "busy" | "free";
   description?: string;
+  priority?: string;
+}
+
+const STORAGE_KEY = 'taskspark-day-plan';
+
+// Safe URL decoder that handles both encoded and non-encoded strings
+function safeDecodeDescription(text: string): string {
+  try {
+    // Check if the string contains URL-encoded characters
+    if (text.includes('%')) {
+      return decodeURIComponent(text);
+    }
+    return text;
+  } catch (error) {
+    // If decoding fails, return original text
+    return text;
+  }
 }
 
 export default function DayPlan() {
@@ -26,9 +44,41 @@ export default function DayPlan() {
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const { data: tasks, isLoading } = useQuery({
+  const { data: tasks, isLoading } = useQuery<Task[]>({
     queryKey: ["/api/tasks"],
   });
+
+  // Load persisted day plan on mount
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        const savedDate = parsed.date;
+        const today = new Date().toDateString();
+        
+        if (savedDate === today && parsed.blocks) {
+          setTimeBlocks(parsed.blocks);
+        } else {
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      } catch (error) {
+        console.error('Failed to load saved day plan:', error);
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+  }, []);
+
+  // Persist day plan whenever it changes
+  useEffect(() => {
+    if (timeBlocks.length > 0) {
+      const dataToSave = {
+        date: new Date().toDateString(),
+        blocks: timeBlocks,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+    }
+  }, [timeBlocks]);
 
   const generatePlanMutation = useMutation({
     mutationFn: async () => {
@@ -41,10 +91,17 @@ export default function DayPlan() {
       return data;
     },
     onSuccess: (data: any) => {
-      setTimeBlocks(data.timeBlocks);
+      // Enrich time blocks with task priority information
+      const taskMap = new Map(tasks?.map(t => [t.id, t]) || []);
+      const enrichedBlocks = data.timeBlocks.map((block: TimeBlock) => ({
+        ...block,
+        priority: block.taskId ? taskMap.get(block.taskId)?.priority : undefined,
+      }));
+      
+      setTimeBlocks(enrichedBlocks);
       toast({
-        title: "Day plan generated!",
-        description: `Your schedule is ready with ${data.timeBlocks.length} time blocks.`,
+        title: "День спланирован!",
+        description: `Расписание готово с ${data.timeBlocks.length} временными блоками.`,
       });
     },
     onError: (error: any) => {
@@ -59,8 +116,8 @@ export default function DayPlan() {
   const handleGeneratePlan = async () => {
     if (selectedTasks.length === 0) {
       toast({
-        title: "No tasks selected",
-        description: "Please select at least one task to plan your day",
+        title: "Не выбраны задачи",
+        description: "Пожалуйста, выберите хотя бы одну задачу для планирования дня",
         variant: "destructive",
       });
       return;
@@ -69,6 +126,15 @@ export default function DayPlan() {
     setIsGenerating(true);
     await generatePlanMutation.mutateAsync();
     setIsGenerating(false);
+  };
+
+  const handleClearPlan = () => {
+    setTimeBlocks([]);
+    localStorage.removeItem(STORAGE_KEY);
+    toast({
+      title: "План очищен",
+      description: "Расписание дня удалено",
+    });
   };
 
   const handleDragEnd = (result: DropResult) => {
@@ -105,8 +171,8 @@ export default function DayPlan() {
     queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
     
     toast({
-      title: "Plan applied!",
-      description: "Task due dates have been updated",
+      title: "План применен!",
+      description: "Даты выполнения задач обновлены",
     });
   };
 
@@ -121,8 +187,8 @@ export default function DayPlan() {
     URL.revokeObjectURL(url);
 
     toast({
-      title: "Calendar downloaded",
-      description: "ICS file ready to import into your calendar app",
+      title: "Календарь загружен",
+      description: "Файл ICS готов для импорта в календарь",
     });
   };
 
@@ -153,7 +219,28 @@ export default function DayPlan() {
     );
   }
 
-  const availableTasks = (tasks as any[])?.filter((t: any) => t.status !== "completed" && t.status !== "archived") || [];
+  // Sort tasks by priority (high first) and deadline (earliest first)
+  const availableTasks = (tasks || [])
+    .filter((t: Task) => t.status !== "completed" && t.status !== "archived")
+    .sort((a: Task, b: Task) => {
+      // Priority order: high > medium > low
+      const priorityOrder = { high: 0, medium: 1, low: 2 };
+      const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 1;
+      const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 1;
+      
+      if (aPriority !== bPriority) {
+        return aPriority - bPriority;
+      }
+      
+      // If same priority, sort by deadline (earliest first)
+      if (a.deadlineDateTime && b.deadlineDateTime) {
+        return new Date(a.deadlineDateTime).getTime() - new Date(b.deadlineDateTime).getTime();
+      }
+      if (a.deadlineDateTime) return -1;
+      if (b.deadlineDateTime) return 1;
+      
+      return 0;
+    });
 
   return (
     <div className="min-h-screen p-6 space-y-6">
@@ -161,15 +248,15 @@ export default function DayPlan() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Calendar className="h-8 w-8 text-primary" />
-            AI Day Planner
+            Планировщик дня с ИИ
           </h1>
           <p className="text-muted-foreground mt-1">
-            Let AI organize your day with an optimized schedule
+            Позвольте ИИ организовать ваш день с оптимизированным расписанием
           </p>
         </div>
         <Badge variant="outline" className="gap-1">
           <Zap className="h-3 w-3" />
-          1 plan per day
+          5 планов в день
         </Badge>
       </div>
 
@@ -177,7 +264,7 @@ export default function DayPlan() {
         {/* Task Selection */}
         <Card className="p-4 lg:col-span-1">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold">Select Tasks</h2>
+            <h2 className="font-semibold">Выбрать задачи</h2>
             {availableTasks.length > 0 && (
               <Button
                 variant="ghost"
@@ -185,15 +272,15 @@ export default function DayPlan() {
                 onClick={handleSelectAll}
                 data-testid="button-select-all"
               >
-                {selectedTasks.length === availableTasks.length ? "Deselect All" : "Select All"}
+                {selectedTasks.length === availableTasks.length ? "Снять все" : "Выбрать все"}
               </Button>
             )}
           </div>
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {availableTasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No tasks available</p>
+              <p className="text-sm text-muted-foreground">Нет доступных задач</p>
             ) : (
-              availableTasks.map((task: any) => (
+              availableTasks.map((task: Task) => (
                 <div
                   key={task.id}
                   className="flex items-start gap-2 p-2 rounded hover-elevate active-elevate-2 cursor-pointer"
@@ -205,13 +292,31 @@ export default function DayPlan() {
                     onCheckedChange={() => toggleTaskSelection(task.id)}
                   />
                   <div className="flex-1">
-                    <p className="text-sm font-medium">{task.title}</p>
-                    {task.hours && (
-                      <Badge variant="outline" className="gap-1 text-xs mt-1">
-                        <Clock className="h-3 w-3" />
-                        {task.hours}h
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-sm font-medium flex-1">{task.title}</p>
+                      {task.priority && (
+                        <Badge 
+                          variant={task.priority === 'high' ? 'destructive' : task.priority === 'medium' ? 'default' : 'secondary'}
+                          className="text-xs h-5"
+                        >
+                          {task.priority === 'high' ? 'Высокий' : task.priority === 'medium' ? 'Средний' : 'Низкий'}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {task.hours && (
+                        <Badge variant="outline" className="gap-1 text-xs">
+                          <Clock className="h-3 w-3" />
+                          {task.hours}ч
+                        </Badge>
+                      )}
+                      {task.deadlineDateTime && (
+                        <Badge variant="outline" className="gap-1 text-xs">
+                          <AlertCircle className="h-3 w-3" />
+                          {new Date(task.deadlineDateTime).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))
@@ -226,12 +331,12 @@ export default function DayPlan() {
             {isGenerating ? (
               <>
                 <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Generating...
+                Генерация...
               </>
             ) : (
               <>
                 <Sparkles className="h-4 w-4" />
-                Generate Day Plan
+                Создать план дня
               </>
             )}
           </Button>
@@ -240,9 +345,19 @@ export default function DayPlan() {
         {/* Timeline */}
         <Card className="p-4 lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold">Today's Schedule</h2>
+            <h2 className="font-semibold">Расписание дня</h2>
             {timeBlocks.length > 0 && (
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  onClick={handleClearPlan}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  data-testid="button-clear-plan"
+                >
+                  <Zap className="h-4 w-4" />
+                  Очистить
+                </Button>
                 <Button
                   onClick={downloadICS}
                   variant="outline"
@@ -251,7 +366,7 @@ export default function DayPlan() {
                   data-testid="button-download-ics"
                 >
                   <Download className="h-4 w-4" />
-                  Download ICS
+                  Скачать ICS
                 </Button>
                 <Button
                   onClick={handleApplyPlan}
@@ -259,7 +374,7 @@ export default function DayPlan() {
                   className="gap-2"
                   data-testid="button-apply-plan"
                 >
-                  Apply to Tasks
+                  Применить
                 </Button>
               </div>
             )}
@@ -269,7 +384,7 @@ export default function DayPlan() {
             <div className="text-center py-12">
               <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
               <p className="text-muted-foreground">
-                Select tasks and generate a plan to see your optimized schedule
+                Выберите задачи и создайте план, чтобы увидеть оптимизированное расписание
               </p>
             </div>
           ) : (
@@ -296,21 +411,29 @@ export default function DayPlan() {
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
                                   <span className="font-mono text-sm font-medium">
                                     {block.time}
                                   </span>
                                   <Badge variant="outline" className="text-xs">
-                                    {block.duration}min
+                                    {block.duration}мин
                                   </Badge>
                                   <Badge variant="secondary" className="text-xs capitalize">
-                                    {block.type}
+                                    {block.type === 'task' ? 'Задача' : block.type}
                                   </Badge>
+                                  {block.priority && (
+                                    <Badge 
+                                      variant={block.priority === 'high' ? 'destructive' : block.priority === 'medium' ? 'default' : 'secondary'}
+                                      className="text-xs"
+                                    >
+                                      {block.priority === 'high' ? 'Высокий' : block.priority === 'medium' ? 'Средний' : 'Низкий'}
+                                    </Badge>
+                                  )}
                                 </div>
                                 <p className="font-medium">{block.title}</p>
                                 {block.description && (
-                                  <p className="text-sm text-muted-foreground mt-1">
-                                    {block.description}
+                                  <p className="text-sm text-muted-foreground mt-1 break-words overflow-hidden text-ellipsis">
+                                    {safeDecodeDescription(block.description)}
                                   </p>
                                 )}
                               </div>
