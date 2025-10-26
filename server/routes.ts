@@ -120,6 +120,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Cache monitoring endpoints (admin only)
+  app.get('/api/admin/cache/stats', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const currentUser = await storage.getUser(userId);
+      
+      if (!currentUser?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const stats = cacheService.getStats();
+      const memoryUsage = cacheService.getMemoryUsage();
+      const healthStatus = cacheService.getHealthStatus();
+      
+      logger.info('Cache stats accessed by admin', { userId, keyCount: memoryUsage.keyCount });
+      
+      res.json({
+        stats,
+        memory: memoryUsage,
+        health: healthStatus,
+      });
+    } catch (error) {
+      logger.apiError('GET /api/admin/cache/stats', error);
+      res.status(500).json({ message: "Failed to fetch cache stats" });
+    }
+  });
+
+  app.post('/api/admin/cache/clear', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const currentUser = await storage.getUser(userId);
+      
+      if (!currentUser?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const { namespace } = req.body;
+      
+      let clearedCount = 0;
+      if (namespace) {
+        // Clear specific namespace
+        clearedCount = cacheService.deleteByPattern(new RegExp(`^${namespace}:`));
+        logger.warn('Cache namespace cleared by admin', { userId, namespace, clearedCount });
+      } else {
+        // Clear all cache
+        cacheService.flush();
+        logger.warn('All cache cleared by admin', { userId });
+      }
+      
+      res.json({ 
+        message: namespace ? `Cleared ${clearedCount} keys from namespace: ${namespace}` : 'All cache cleared',
+        clearedCount,
+      });
+    } catch (error) {
+      logger.apiError('POST /api/admin/cache/clear', error);
+      res.status(500).json({ message: "Failed to clear cache" });
+    }
+  });
+
+  app.post('/api/admin/cache/prune', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const currentUser = await storage.getUser(userId);
+      
+      if (!currentUser?.isAdmin) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const prunedCount = cacheService.pruneCache();
+      
+      logger.info('Cache pruned by admin', { userId, prunedCount });
+      
+      res.json({ 
+        message: `Pruned ${prunedCount} expired cache entries`,
+        prunedCount,
+      });
+    } catch (error) {
+      logger.apiError('POST /api/admin/cache/prune', error);
+      res.status(500).json({ message: "Failed to prune cache" });
+    }
+  });
+
   app.patch('/api/user/push-notifications', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const userId = req.user!.id;
