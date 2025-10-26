@@ -404,35 +404,35 @@ export default function DayPlan() {
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
-                            className={`p-3 rounded-lg border ${
+                            className={`p-2.5 rounded-lg border ${
                               snapshot.isDragging ? 'shadow-lg' : ''
                             } ${getBlockColor(block.type)}`}
                             data-testid={`time-block-${block.id}`}
                           >
                             <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                  <span className="font-mono text-sm font-medium">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                                  <span className="font-mono text-xs font-medium">
                                     {block.time}
                                   </span>
-                                  <Badge variant="outline" className="text-xs">
-                                    {block.duration}мин
+                                  <Badge variant="outline" className="text-xs h-5">
+                                    {block.duration}м
                                   </Badge>
-                                  <Badge variant="secondary" className="text-xs capitalize">
+                                  <Badge variant="secondary" className="text-xs h-5">
                                     {block.type === 'task' ? 'Задача' : block.type}
                                   </Badge>
                                   {block.priority && (
                                     <Badge 
                                       variant={block.priority === 'high' ? 'destructive' : block.priority === 'medium' ? 'default' : 'secondary'}
-                                      className="text-xs"
+                                      className="text-xs h-5"
                                     >
-                                      {block.priority === 'high' ? 'Высокий' : block.priority === 'medium' ? 'Средний' : 'Низкий'}
+                                      {block.priority === 'high' ? '🔴' : block.priority === 'medium' ? '🟡' : '🟢'}
                                     </Badge>
                                   )}
                                 </div>
-                                <p className="font-medium">{block.title}</p>
+                                <p className="font-medium text-sm mb-0.5 truncate">{block.title}</p>
                                 {block.description && (
-                                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                                  <p className="text-xs text-muted-foreground line-clamp-1">
                                     {safeDecodeDescription(block.description)}
                                   </p>
                                 )}
