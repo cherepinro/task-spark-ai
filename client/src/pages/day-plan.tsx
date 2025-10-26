@@ -432,7 +432,7 @@ export default function DayPlan() {
                                 </div>
                                 <p className="font-medium">{block.title}</p>
                                 {block.description && (
-                                  <p className="text-sm text-muted-foreground mt-1 break-words overflow-hidden text-ellipsis">
+                                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                                     {safeDecodeDescription(block.description)}
                                   </p>
                                 )}
