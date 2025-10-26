@@ -122,13 +122,11 @@ export function AIChatPanel({ open, onOpenChange }: AIChatPanelProps) {
 
   const handlePromptClick = async (prompt: string) => {
     setInput(prompt);
-    // Auto-send the suggested prompt
-    setTimeout(() => {
-      const sendButton = document.querySelector('[data-testid="button-send-message"]') as HTMLButtonElement;
-      if (sendButton) {
-        sendButton.click();
-      }
-    }, 100);
+    // Directly trigger the send instead of using setTimeout to avoid memory leaks
+    // Use a microtask to ensure input is set before sending
+    queueMicrotask(() => {
+      handleSend();
+    });
   };
 
   const handleNewChat = () => {
