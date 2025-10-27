@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Sparkles, Send, RotateCcw } from "lucide-react";
+import { Sparkles, Send, RotateCcw, Mic, MicOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -31,6 +31,9 @@ export function AIChatPanel({ open, onOpenChange }: AIChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [language, setLanguage] = useState<'ru-RU' | 'en-US'>('ru-RU');
+  const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
 
   const handleSend = async () => {
@@ -138,6 +141,122 @@ export function AIChatPanel({ open, onOpenChange }: AIChatPanelProps) {
     });
   };
 
+  // Initialize speech recognition
+  useEffect(() => {
+    // Check if browser supports speech recognition
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      
+      // Create task directly from voice input
+      const createTaskFromVoice = async () => {
+        try {
+          const taskPayload = {
+            title: transcript,
+            status: "todo",
+            priority: "medium",
+          };
+
+          const taskRes = await apiRequest("POST", "/api/tasks", taskPayload);
+
+          if (!taskRes.ok) {
+            const errorData = await taskRes.json();
+            throw new Error(errorData.error || "Failed to create task");
+          }
+
+          await taskRes.json();
+          queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+
+          toast({
+            title: "✅ Задача создана голосом!",
+            description: `"${transcript}"`,
+          });
+
+          setInput("");
+        } catch (error) {
+          toast({
+            title: "Ошибка",
+            description: "Не удалось создать задачу. Попробуйте снова.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsRecording(false);
+        }
+      };
+
+      createTaskFromVoice();
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error:', event.error);
+      setIsRecording(false);
+      
+      if (event.error !== 'no-speech' && event.error !== 'aborted') {
+        toast({
+          title: "Ошибка распознавания",
+          description: "Не удалось распознать речь. Попробуйте снова.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+    };
+  }, [language, toast]);
+
+  const toggleVoiceRecognition = () => {
+    if (!recognitionRef.current) {
+      toast({
+        title: "Не поддерживается",
+        description: "Ваш браузер не поддерживает распознавание речи. Попробуйте Chrome или Edge.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isRecording) {
+      recognitionRef.current.stop();
+      setIsRecording(false);
+    } else {
+      recognitionRef.current.lang = language;
+      recognitionRef.current.start();
+      setIsRecording(true);
+      
+      toast({
+        title: "🎤 Слушаю...",
+        description: language === 'ru-RU' ? "Говорите по-русски" : "Speak in English",
+      });
+    }
+  };
+
+  const toggleLanguage = () => {
+    const newLang = language === 'ru-RU' ? 'en-US' : 'ru-RU';
+    setLanguage(newLang);
+    toast({
+      title: "Язык изменен",
+      description: newLang === 'ru-RU' ? "Русский язык" : "English language",
+    });
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-96 p-0 flex flex-col" data-testid="panel-ai-chat">
@@ -228,16 +347,26 @@ export function AIChatPanel({ open, onOpenChange }: AIChatPanelProps) {
           )}
         </ScrollArea>
 
-        <div className="p-4 border-t">
+        <div className="p-4 border-t space-y-2">
           <div className="flex gap-2">
             <Input
-              placeholder="Ask AI anything..."
+              placeholder={isRecording ? "Слушаю..." : "Спросите ИИ что-нибудь..."}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              disabled={isLoading}
+              disabled={isLoading || isRecording}
               data-testid="input-ai-chat"
             />
+            <Button
+              size="icon"
+              onClick={toggleVoiceRecognition}
+              disabled={isLoading}
+              variant={isRecording ? "destructive" : "outline"}
+              data-testid="button-voice-input"
+              title={isRecording ? "Остановить запись" : "Голосовой ввод"}
+            >
+              {isRecording ? <MicOff className="h-4 w-4 animate-pulse" /> : <Mic className="h-4 w-4" />}
+            </Button>
             <Button
               size="icon"
               onClick={handleSend}
@@ -246,6 +375,22 @@ export function AIChatPanel({ open, onOpenChange }: AIChatPanelProps) {
             >
               <Send className="h-4 w-4" />
             </Button>
+          </div>
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleLanguage}
+              className="text-xs h-6"
+              data-testid="button-toggle-language"
+            >
+              🌐 {language === 'ru-RU' ? 'Русский' : 'English'}
+            </Button>
+            {isRecording && (
+              <span className="text-xs text-muted-foreground animate-pulse">
+                Говорите название задачи...
+              </span>
+            )}
           </div>
         </div>
       </SheetContent>
