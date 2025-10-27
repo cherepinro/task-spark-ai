@@ -219,27 +219,33 @@ export default function DayPlan() {
     );
   }
 
-  // Sort tasks by priority (high first) and deadline (earliest first)
+  // Sort tasks by deadline (earliest first), then by priority within same deadline
   const availableTasks = (tasks || [])
     .filter((t: Task) => t.status !== "completed" && t.status !== "archived")
     .sort((a: Task, b: Task) => {
-      // Priority order: high > medium > low
+      // First, sort by deadline (earliest first)
+      // Tasks with deadlines come before tasks without deadlines
+      const aDeadline = a.deadlineDateTime ? new Date(a.deadlineDateTime).getTime() : null;
+      const bDeadline = b.deadlineDateTime ? new Date(b.deadlineDateTime).getTime() : null;
+      
+      if (aDeadline !== null && bDeadline !== null) {
+        // Both have deadlines - compare them
+        if (aDeadline !== bDeadline) {
+          return aDeadline - bDeadline; // Earlier deadline first
+        }
+        // Same deadline, fall through to priority comparison
+      } else if (aDeadline !== null) {
+        return -1; // Task with deadline comes first
+      } else if (bDeadline !== null) {
+        return 1; // Task with deadline comes first
+      }
+      
+      // If deadlines are the same (or both don't have deadlines), sort by priority
       const priorityOrder = { high: 0, medium: 1, low: 2 };
       const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 1;
       const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 1;
       
-      if (aPriority !== bPriority) {
-        return aPriority - bPriority;
-      }
-      
-      // If same priority, sort by deadline (earliest first)
-      if (a.deadlineDateTime && b.deadlineDateTime) {
-        return new Date(a.deadlineDateTime).getTime() - new Date(b.deadlineDateTime).getTime();
-      }
-      if (a.deadlineDateTime) return -1;
-      if (b.deadlineDateTime) return 1;
-      
-      return 0;
+      return aPriority - bPriority;
     });
 
   return (
