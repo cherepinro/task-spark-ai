@@ -194,12 +194,12 @@ export default function Dashboard() {
         {/* Usage Limits */}
         <UsageWidget />
 
-        {/* Today's Focus */}
+        {/* Recently added tasks */}
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <ListTodo className="h-5 w-5" />
-              Today's Focus
+              Недавно добавленные задачи
             </h2>
             <div className="flex gap-2">
               <Button
