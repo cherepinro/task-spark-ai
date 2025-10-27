@@ -43,14 +43,14 @@ export default function Templates() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       toast({
-        title: "Task created",
-        description: "Task created from template successfully.",
+        title: "Задача создана",
+        description: "Задача успешно создана из шаблона.",
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to create task from template.",
+        title: "Ошибка",
+        description: "Не удалось создать задачу из шаблона.",
         variant: "destructive",
       });
     },
@@ -63,14 +63,14 @@ export default function Templates() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/templates"] });
       toast({
-        title: "Template deleted",
-        description: "Template has been removed.",
+        title: "Шаблон удален",
+        description: "Шаблон был удален.",
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to delete template.",
+        title: "Ошибка",
+        description: "Не удалось удалить шаблон.",
         variant: "destructive",
       });
     },
@@ -119,10 +119,10 @@ export default function Templates() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2" data-testid="text-page-title">
           <FileCode2 className="h-6 w-6" />
-          Task Templates
+          Шаблоны задач
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Save frequently used tasks as templates for quick creation
+          Сохраняйте часто используемые задачи как шаблоны для быстрого создания
         </p>
       </div>
 
@@ -170,7 +170,7 @@ export default function Templates() {
                     data-testid={`button-use-template-${template.id}`}
                   >
                     <Play className="h-3.5 w-3.5 mr-1" />
-                    Use
+                    Использовать
                   </Button>
                   <Button
                     size="sm"
@@ -188,22 +188,22 @@ export default function Templates() {
       ) : (
         <EmptyState
           icon={FileCode2}
-          title="No templates yet"
-          description="Create templates from your tasks to quickly create similar tasks in the future."
+          title="Пока нет шаблонов"
+          description="Создавайте шаблоны из своих задач, чтобы быстро создавать похожие задачи в будущем."
         />
       )}
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Template</AlertDialogTitle>
+            <AlertDialogTitle>Удалить шаблон</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this template? This action cannot be undone.
+              Вы уверены, что хотите удалить этот шаблон? Это действие нельзя отменить.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Удалить</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

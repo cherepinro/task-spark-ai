@@ -45,10 +45,10 @@ export default function Insights() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2" data-testid="text-page-title">
           <Sparkles className="h-6 w-6 text-primary" />
-          AI Insights
+          AI Аналитика
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Intelligent productivity analysis and recommendations
+          Интеллектуальный анализ продуктивности и рекомендации
         </p>
       </div>
 
@@ -59,8 +59,8 @@ export default function Insights() {
               <Brain className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Smart Categorization</p>
-              <p className="text-lg font-semibold">Active</p>
+              <p className="text-sm text-muted-foreground">Умная категоризация</p>
+              <p className="text-lg font-semibold">Активна</p>
             </div>
           </div>
         </Card>
@@ -70,7 +70,7 @@ export default function Insights() {
               <TrendingUp className="h-5 w-5 text-chart-3" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Productivity Score</p>
+              <p className="text-sm text-muted-foreground">Оценка продуктивности</p>
               <p className="text-lg font-semibold" data-testid="text-productivity-score">
                 {procrastinationScore 
                   ? `${(10 - (procrastinationScore.score / 10)).toFixed(1)}/10`
@@ -78,7 +78,7 @@ export default function Insights() {
               </p>
               {procrastinationScore && (
                 <p className="text-xs text-muted-foreground mt-1 capitalize">
-                  {procrastinationScore.level} procrastination
+                  {procrastinationScore.level === 'low' ? 'Низкая' : procrastinationScore.level === 'moderate' ? 'Умеренная' : 'Высокая'} прокрастинация
                 </p>
               )}
             </div>
@@ -90,7 +90,7 @@ export default function Insights() {
               <Target className="h-5 w-5 text-chart-4" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Tasks Analyzed</p>
+              <p className="text-sm text-muted-foreground">Проанализировано задач</p>
               <p className="text-lg font-semibold" data-testid="text-tasks-analyzed">
                 {tasks?.length ?? 0}
               </p>
@@ -123,8 +123,8 @@ export default function Insights() {
       ) : (
         <EmptyState
           icon={Sparkles}
-          title="No insights yet"
-          description="AI will analyze your tasks and provide intelligent recommendations as you use the app."
+          title="Пока нет аналитики"
+          description="ИИ будет анализировать ваши задачи и предоставлять интеллектуальные рекомендации по мере использования приложения."
         />
       )}
     </div>

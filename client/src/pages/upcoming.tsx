@@ -36,8 +36,8 @@ export default function Upcoming() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       toast({
-        title: "Task deleted",
-        description: "Task has been deleted successfully.",
+        title: "Задача удалена",
+        description: "Задача успешно удалена.",
       });
     },
   });
@@ -50,15 +50,15 @@ export default function Upcoming() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       toast({
-        title: "Task created",
-        description: "Your task has been created successfully.",
+        title: "Задача создана",
+        description: "Ваша задача успешно создана.",
       });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Failed to create task",
-        description: error.message || "An error occurred while creating the task. Please try again.",
+        title: "Не удалось создать задачу",
+        description: error.message || "Произошла ошибка при создании задачи. Попробуйте снова.",
       });
     },
   });
@@ -85,8 +85,8 @@ export default function Upcoming() {
       await apiRequest("PATCH", `/api/tasks/${editingTask.id}`, data);
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       toast({
-        title: "Task updated",
-        description: "Your task has been updated successfully.",
+        title: "Задача обновлена",
+        description: "Ваша задача успешно обновлена.",
       });
       setShowTaskModal(false);
       setEditingTask(null);
@@ -143,15 +143,15 @@ export default function Upcoming() {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2" data-testid="text-page-title">
               <CalendarDays className="h-6 w-6" />
-              Upcoming
+              Предстоящие
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {upcomingTasks.length} upcoming tasks
+              {upcomingTasks.length} {upcomingTasks.length === 1 ? 'предстоящая задача' : upcomingTasks.length < 5 ? 'предстоящие задачи' : 'предстоящих задач'}
             </p>
           </div>
           <Button onClick={() => setShowTaskModal(true)} data-testid="button-add-task" className="gap-2">
             <Plus className="h-4 w-4" />
-            Add Task
+            Добавить задачу
           </Button>
         </div>
 
@@ -177,9 +177,9 @@ export default function Upcoming() {
         ) : (
           <EmptyState
             icon={CalendarDays}
-            title="No upcoming tasks"
-            description="You have no tasks scheduled for the future. Add tasks with due dates to see them here."
-            actionLabel="Add Task"
+            title="Нет предстоящих задач"
+            description="У вас нет задач, запланированных на будущее. Добавьте задачи с датами выполнения, чтобы увидеть их здесь."
+            actionLabel="Добавить задачу"
             onAction={() => setShowTaskModal(true)}
           />
         )}

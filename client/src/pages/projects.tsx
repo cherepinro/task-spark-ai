@@ -40,15 +40,15 @@ export default function Projects() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       toast({
-        title: "Project created",
-        description: "Your new project has been created successfully.",
+        title: "Проект создан",
+        description: "Ваш новый проект успешно создан.",
       });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to create project. Please try again.",
+        title: "Ошибка",
+        description: error.message || "Не удалось создать проект. Попробуйте снова.",
       });
     },
   });
@@ -71,10 +71,10 @@ export default function Projects() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2" data-testid="text-page-title">
             <FolderKanban className="h-6 w-6" />
-            Projects
+            Проекты
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {projects?.length || 0} projects
+            {projects?.length || 0} {projects?.length === 1 ? 'проект' : (projects?.length || 0) < 5 ? 'проекта' : 'проектов'}
           </p>
         </div>
         <Button 
@@ -83,7 +83,7 @@ export default function Projects() {
           onClick={() => setShowProjectModal(true)}
         >
           <Plus className="h-4 w-4" />
-          New Project
+          Новый проект
         </Button>
       </div>
 
@@ -107,7 +107,7 @@ export default function Projects() {
                       {project.name}
                     </h3>
                     <p className="text-xs text-muted-foreground" data-testid={`text-task-count-${project.id}`}>
-                      {taskCount} {taskCount === 1 ? 'task' : 'tasks'}
+                      {taskCount} {taskCount === 1 ? 'задача' : taskCount < 5 ? 'задачи' : 'задач'}
                     </p>
                   </div>
                 </div>
@@ -118,9 +118,9 @@ export default function Projects() {
       ) : (
         <EmptyState
           icon={FolderKanban}
-          title="No projects yet"
-          description="Organize your tasks into projects for better management and focus."
-          actionLabel="Create Project"
+          title="Пока нет проектов"
+          description="Организуйте свои задачи в проекты для лучшего управления и фокуса."
+          actionLabel="Создать проект"
           onAction={() => setShowProjectModal(true)}
         />
       )}

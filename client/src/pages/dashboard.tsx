@@ -56,8 +56,8 @@ export default function Dashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       toast({
-        title: "Task deleted",
-        description: "Task has been deleted successfully.",
+        title: "Задача удалена",
+        description: "Задача успешно удалена.",
       });
     },
   });
@@ -70,15 +70,15 @@ export default function Dashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       toast({
-        title: "Task created",
-        description: "Your task has been created successfully.",
+        title: "Задача создана",
+        description: "Ваша задача успешно создана.",
       });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Failed to create task",
-        description: error.message || "An error occurred while creating the task. Please try again.",
+        title: "Не удалось создать задачу",
+        description: error.message || "Произошла ошибка при создании задачи. Попробуйте снова.",
       });
     },
   });
@@ -105,8 +105,8 @@ export default function Dashboard() {
       await apiRequest("PATCH", `/api/tasks/${editingTask.id}`, data);
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       toast({
-        title: "Task updated",
-        description: "Your task has been updated successfully.",
+        title: "Задача обновлена",
+        description: "Ваша задача успешно обновлена.",
       });
       setShowTaskModal(false);
       setEditingTask(null);
@@ -146,7 +146,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
               <h2 className="text-xl font-semibold" data-testid="text-ai-insights-title">
-                AI-Powered Insights
+                AI Аналитика
               </h2>
             </div>
             <ProcrastinationScore />
@@ -154,7 +154,7 @@ export default function Dashboard() {
           <div className="grid gap-4 md:grid-cols-3">
             <Card className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Completion Rate</span>
+                <span className="text-sm text-muted-foreground">Процент завершения</span>
                 <CheckCircle2 className="h-4 w-4 text-chart-3" />
               </div>
               <div className="space-y-2">
@@ -166,26 +166,26 @@ export default function Dashboard() {
             </Card>
             <Card className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Due Today</span>
+                <span className="text-sm text-muted-foreground">На сегодня</span>
                 <Clock className="h-4 w-4 text-chart-4" />
               </div>
               <p className="text-2xl font-bold" data-testid="text-today-count">
                 {todayTasks}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                tasks need attention
+                {todayTasks === 1 ? 'задача требует внимания' : todayTasks < 5 ? 'задачи требуют внимания' : 'задач требуют внимания'}
               </p>
             </Card>
             <Card className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Productivity</span>
+                <span className="text-sm text-muted-foreground">Продуктивность</span>
                 <TrendingUp className="h-4 w-4 text-chart-2" />
               </div>
               <p className="text-2xl font-bold text-chart-3" data-testid="text-productivity">
-                Good
+                Хорошо
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                On track this week
+                На верном пути на этой неделе
               </p>
             </Card>
           </div>
@@ -211,7 +211,7 @@ export default function Dashboard() {
                 disabled={upcomingTasks.length === 0}
               >
                 <ArrowDownUp className="h-4 w-4" />
-                Reorganize
+                Реорганизовать
               </Button>
               <Button
                 onClick={() => setShowImportDialog(true)}
@@ -221,11 +221,11 @@ export default function Dashboard() {
                 data-testid="button-import-checklist"
               >
                 <ListChecks className="h-4 w-4" />
-                Import Checklist
+                Импорт списка
               </Button>
               <Button onClick={() => setShowTaskModal(true)} size="sm" className="gap-2">
                 <Plus className="h-4 w-4" />
-                Add Task
+                Добавить задачу
               </Button>
             </div>
           </div>
@@ -242,9 +242,9 @@ export default function Dashboard() {
           ) : (
             <EmptyState
               icon={CheckCircle2}
-              title="All caught up!"
-              description="You have no upcoming tasks. Time to add new ones or enjoy your free time."
-              actionLabel="Add Task"
+              title="Все выполнено!"
+              description="У вас нет предстоящих задач. Время добавить новые или насладиться свободным временем."
+              actionLabel="Добавить задачу"
               onAction={() => setShowTaskModal(true)}
             />
           )}
@@ -255,7 +255,7 @@ export default function Dashboard() {
           <div>
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              Smart Suggestions
+              Умные рекомендации
             </h2>
             <div className="space-y-3">
               {insights.map((insight) => (

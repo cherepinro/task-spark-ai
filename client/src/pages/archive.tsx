@@ -22,10 +22,10 @@ export default function Archive() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2" data-testid="text-page-title">
           <ArchiveIcon className="h-6 w-6" />
-          Archive
+          Архив
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {archivedTasks.length} archived tasks
+          {archivedTasks.length} {archivedTasks.length === 1 ? 'архивная задача' : archivedTasks.length < 5 ? 'архивные задачи' : 'архивных задач'}
         </p>
       </div>
 
@@ -38,8 +38,8 @@ export default function Archive() {
       ) : (
         <EmptyState
           icon={ArchiveIcon}
-          title="No archived tasks"
-          description="Tasks you archive will appear here for future reference."
+          title="Нет архивных задач"
+          description="Заархивированные задачи будут отображаться здесь для дальнейшего использования."
         />
       )}
     </div>

@@ -50,8 +50,8 @@ export default function Today() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       toast({
-        title: "Task deleted",
-        description: "Task has been deleted successfully.",
+        title: "Задача удалена",
+        description: "Задача успешно удалена.",
       });
     },
   });
@@ -64,15 +64,15 @@ export default function Today() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       toast({
-        title: "Task created",
-        description: "Your task has been created successfully.",
+        title: "Задача создана",
+        description: "Ваша задача успешно создана.",
       });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Failed to create task",
-        description: error.message || "An error occurred while creating the task. Please try again.",
+        title: "Не удалось создать задачу",
+        description: error.message || "Произошла ошибка при создании задачи. Попробуйте снова.",
       });
     },
   });
@@ -99,8 +99,8 @@ export default function Today() {
       await apiRequest("PATCH", `/api/tasks/${editingTask.id}`, data);
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       toast({
-        title: "Task updated",
-        description: "Your task has been updated successfully.",
+        title: "Задача обновлена",
+        description: "Ваша задача успешно обновлена.",
       });
       setShowTaskModal(false);
       setEditingTask(null);
@@ -149,7 +149,7 @@ export default function Today() {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2" data-testid="text-page-title">
               <Calendar className="h-6 w-6" />
-              Today
+              Сегодня
             </h1>
             <p className="text-sm text-muted-foreground mt-1" data-testid="text-today-date">
               {format(today, "EEEE, MMMM d, yyyy")}
@@ -164,12 +164,12 @@ export default function Today() {
                 className="gap-2"
               >
                 <Zap className="h-4 w-4" />
-                Start 10-min Sprint
+                Старт 10-мин Спринт
               </Button>
             )}
             <Button onClick={() => setShowTaskModal(true)} data-testid="button-add-task" className="gap-2">
               <Plus className="h-4 w-4" />
-              Add Task
+              Добавить задачу
             </Button>
           </div>
         </div>
@@ -187,9 +187,9 @@ export default function Today() {
         ) : (
           <EmptyState
             icon={Calendar}
-            title="No tasks for today"
-            description="You have no tasks scheduled for today. Add a task to get started or enjoy your free time."
-            actionLabel="Add Task"
+            title="Нет задач на сегодня"
+            description="У вас нет задач, запланированных на сегодня. Добавьте задачу, чтобы начать, или наслаждайтесь свободным временем."
+            actionLabel="Добавить задачу"
             onAction={() => setShowTaskModal(true)}
           />
         )}
