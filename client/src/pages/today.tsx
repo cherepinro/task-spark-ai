@@ -133,6 +133,22 @@ export default function Today() {
     }
     
     return false;
+  }).sort((a, b) => {
+    // Sort by time (earliest to latest), then by priority within same time
+    const timeA = a.deadlineDateTime ? new Date(a.deadlineDateTime) : a.dueDate ? new Date(a.dueDate) : null;
+    const timeB = b.deadlineDateTime ? new Date(b.deadlineDateTime) : b.dueDate ? new Date(b.dueDate) : null;
+    
+    if (!timeA || !timeB) return 0;
+    
+    // Compare times first
+    const timeDiff = timeA.getTime() - timeB.getTime();
+    if (timeDiff !== 0) return timeDiff; // Earlier time comes first
+    
+    // If times are the same, sort by priority (high > medium > low)
+    const priorityOrder = { high: 0, medium: 1, low: 2 };
+    const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 1;
+    const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 1;
+    return aPriority - bPriority;
   }) || [];
 
   return (

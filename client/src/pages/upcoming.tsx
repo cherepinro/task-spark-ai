@@ -117,11 +117,21 @@ export default function Upcoming() {
     if (!taskDate) return false;
     return isAfter(taskDate, startOfToday());
   }).sort((a, b) => {
-    // Sort by whichever date is available (dueDate or deadlineDateTime)
+    // Sort by date FIRST (earliest to latest), then by priority within same date
     const dateA = a.dueDate ? new Date(a.dueDate) : a.deadlineDateTime ? new Date(a.deadlineDateTime) : null;
     const dateB = b.dueDate ? new Date(b.dueDate) : b.deadlineDateTime ? new Date(b.deadlineDateTime) : null;
+    
     if (!dateA || !dateB) return 0;
-    return dateA.getTime() - dateB.getTime();
+    
+    // Compare dates first
+    const dateDiff = dateA.getTime() - dateB.getTime();
+    if (dateDiff !== 0) return dateDiff; // Earlier date comes first
+    
+    // If dates are the same, sort by priority (high > medium > low)
+    const priorityOrder = { high: 0, medium: 1, low: 2 };
+    const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 1;
+    const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 1;
+    return aPriority - bPriority;
   }) || [];
 
   const groupedTasks = upcomingTasks.reduce((acc, task) => {
