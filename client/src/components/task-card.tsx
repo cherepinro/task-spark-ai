@@ -74,6 +74,33 @@ export function TaskCard({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {task.dueDate && (
+              <Badge
+                variant="outline"
+                className="gap-1 border-chart-1/30 bg-chart-1/5 text-chart-1 text-xs"
+                data-testid={`badge-due-date-${task.id}`}
+              >
+                <Calendar className="h-3 w-3" />
+                {format(new Date(task.dueDate), "d MMM")}
+              </Badge>
+            )}
+            {task.deadlineDateTime && (
+              <Badge
+                variant="outline"
+                className="gap-1 border-destructive/30 bg-destructive/5 text-destructive text-xs"
+                data-testid={`badge-deadline-${task.id}`}
+              >
+                <Clock className="h-3 w-3" />
+                {format(new Date(task.deadlineDateTime), "d MMM, HH:mm")}
+              </Badge>
+            )}
+            <Badge
+              variant="outline"
+              className={cn("text-xs", priorityBadgeColors[task.priority as keyof typeof priorityBadgeColors])}
+              data-testid={`badge-priority-${task.id}`}
+            >
+              {task.priority}
+            </Badge>
             {task.hours && (
               <Badge
                 variant="outline"
@@ -106,34 +133,9 @@ export function TaskCard({
                 AI Suggested
               </Badge>
             )}
-            <Badge
-              variant="outline"
-              className={cn("text-xs", priorityBadgeColors[task.priority as keyof typeof priorityBadgeColors])}
-              data-testid={`badge-priority-${task.id}`}
-            >
-              {task.priority}
-            </Badge>
             {task.aiCategory && (
               <Badge variant="outline" className="text-xs" data-testid={`badge-category-${task.id}`}>
                 {task.aiCategory}
-              </Badge>
-            )}
-            {task.dueDate && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                <span data-testid={`text-due-date-${task.id}`}>
-                  {format(new Date(task.dueDate), "MMM d")}
-                </span>
-              </div>
-            )}
-            {task.deadlineDateTime && (
-              <Badge
-                variant="outline"
-                className="gap-1 border-destructive/30 bg-destructive/5 text-destructive text-xs"
-                data-testid={`badge-deadline-${task.id}`}
-              >
-                <Clock className="h-3 w-3" />
-                {format(new Date(task.deadlineDateTime), "MMM d, HH:mm")}
               </Badge>
             )}
             {task.projectId && (
