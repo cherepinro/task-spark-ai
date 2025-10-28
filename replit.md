@@ -35,3 +35,26 @@ A separate FastAPI-based ML microservice calculates a user's procrastination sco
 - **Authentication**: Firebase Auth (Email/Password + Google OAuth)
 - **Internationalization**: `react-i18next`
 - **Drag and Drop**: `@hello-pangea/dnd`
+
+## Recent Changes (October 28, 2025)
+
+### Critical Bug Fixes
+1. **Date Picker Off-by-One Month Error** (FIXED)
+   - **Issue**: When users selected a date in the calendar (e.g., October 30), the system saved and displayed it as the previous month (September 30)
+   - **Root Cause**: Calendar component had `showOutsideDays={true}` by default, which displayed days from adjacent months. Clicking on these "outside days" selected dates from the wrong month
+   - **Solution**: Set `showOutsideDays={false}` in Calendar component to prevent displaying/selecting days from adjacent months
+   - **Location**: `task-creation-modal.tsx` line 378
+   - **DO NOT REMOVE**: This fix is essential for correct date handling - removing it will cause month selection bugs
+
+2. **Task Sorting Enhancement**
+   - Updated sorting logic in `upcoming.tsx` and `today.tsx` to prioritize date FIRST (earliest to latest), THEN priority within same date
+   - Previous behavior incorrectly prioritized by priority level first
+
+3. **Date Display Improvements**
+   - Changed task deadline display from muted text to prominent colored badge with "d MMM" format
+   - Enhanced visual hierarchy for deadline information
+
+### Test Account
+- Email: test@admin.com
+- Password: test123
+- Role: Admin with full AI access

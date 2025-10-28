@@ -372,13 +372,23 @@ export function TaskCreationModal({
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
+                          showOutsideDays={false}
                           selected={field.value ? new Date(field.value) : undefined}
                           onSelect={(date) => {
                             if (date) {
-                              const currentTime = field.value ? new Date(field.value) : new Date();
-                              date.setHours(currentTime.getHours());
-                              date.setMinutes(currentTime.getMinutes());
-                              field.onChange(date);
+                              // Extract date components using local timezone methods
+                              const year = date.getFullYear();
+                              const month = date.getMonth();
+                              const day = date.getDate();
+                              
+                              // Preserve time from existing value or default to noon
+                              const currentTime = field.value ? new Date(field.value) : null;
+                              const hours = currentTime ? currentTime.getHours() : 12;
+                              const minutes = currentTime ? currentTime.getMinutes() : 0;
+                              
+                              // Create new date with preserved time
+                              const newDate = new Date(year, month, day, hours, minutes, 0, 0);
+                              field.onChange(newDate);
                             } else {
                               field.onChange(null);
                             }
