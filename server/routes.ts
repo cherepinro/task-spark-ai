@@ -10,6 +10,7 @@ import {
   insertTaskTemplateSchema,
   insertUserSettingsSchema,
   insertPushTokenSchema,
+  insertStickyNoteSchema,
   type InsertTask,
   type Task,
 } from "@shared/schema";
@@ -1351,6 +1352,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(task);
     } catch (error) {
       res.status(500).json({ error: "Failed to create task from template" });
+    }
+  });
+
+  // Sticky Notes endpoints
+  app.get("/api/sticky-notes", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const notes = await storage.getAllStickyNotes(userId);
+      res.json(notes);
+    } catch (error) {
+      logger.apiError('GET /api/sticky-notes', error);
+      res.status(500).json({ error: "Failed to fetch sticky notes" });
+    }
+  });
+
+  app.get("/api/sticky-notes/:id", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const note = await storage.getStickyNote(req.params.id);
+      if (!note) {
+        return res.status(404).json({ error: "Sticky note not found" });
+      }
+      if (note.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden: You don't own this sticky note" });
+      }
+      res.json(note);
+    } catch (error) {
+      logger.apiError('GET /api/sticky-notes/:id', error);
+      res.status(500).json({ error: "Failed to fetch sticky note" });
+    }
+  });
+
+  app.post("/api/sticky-notes", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const validatedData = insertStickyNoteSchema.parse(req.body);
+      const note = await storage.createStickyNote({ ...validatedData, userId });
+      res.status(201).json(note);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        logger.apiError('POST /api/sticky-notes - Validation error', error);
+        return res.status(400).json({ error: error.errors });
+      }
+      logger.apiError('POST /api/sticky-notes', error);
+      res.status(500).json({ error: "Failed to create sticky note" });
+    }
+  });
+
+  app.patch("/api/sticky-notes/:id", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Verify ownership before update
+      const existingNote = await storage.getStickyNote(req.params.id);
+      if (!existingNote) {
+        return res.status(404).json({ error: "Sticky note not found" });
+      }
+      if (existingNote.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden: You don't own this sticky note" });
+      }
+      
+      const validatedData = insertStickyNoteSchema.partial().parse(req.body);
+      const note = await storage.updateStickyNote(req.params.id, validatedData);
+      if (!note) {
+        return res.status(404).json({ error: "Sticky note not found" });
+      }
+      res.json(note);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        logger.apiError('PATCH /api/sticky-notes/:id - Validation error', error);
+        return res.status(400).json({ error: error.errors });
+      }
+      logger.apiError('PATCH /api/sticky-notes/:id', error);
+      res.status(500).json({ error: "Failed to update sticky note" });
+    }
+  });
+
+  app.delete("/api/sticky-notes/:id", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Verify ownership before delete
+      const existingNote = await storage.getStickyNote(req.params.id);
+      if (!existingNote) {
+        return res.status(404).json({ error: "Sticky note not found" });
+      }
+      if (existingNote.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden: You don't own this sticky note" });
+      }
+      
+      const success = await storage.deleteStickyNote(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Sticky note not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      logger.apiError('DELETE /api/sticky-notes/:id', error);
+      res.status(500).json({ error: "Failed to delete sticky note" });
     }
   });
 
