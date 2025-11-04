@@ -20,7 +20,7 @@ Core features include:
 - **Task Management**: CRUD operations, search, filtering, recurring tasks, templates, deadline management.
 - **AI Capabilities**: Smart categorization, priority suggestions, natural language parsing, productivity insights, AI-optimized Day Planning, AI Task Decomposition into subtasks (stored as JSONB within the parent task).
 - **Focus Sprint** feature.
-- **Sticky Notes**: Quick notes feature with voice input (Web Speech API), customizable colors, and ability to convert notes into tasks. Full CRUD operations with user-specific data isolation.
+- **Sticky Notes**: Quick notes feature with voice input (Web Speech API), text formatting (bold, italic, lists using markdown syntax), customizable colors, and ability to convert notes into tasks. Full CRUD operations with user-specific data isolation. Optimized for mobile with larger text fields.
 - **User Authentication**: Custom email/password (with bcrypt) and Firebase OAuth for Google sign-in. Firebase Auth SDK for frontend, backend verification of Firebase ID tokens. Sessions managed via PostgreSQL. Role-based access control for AI and admin endpoints.
 - **Internationalization**: Full support with `react-i18next`, Russian as primary.
 
@@ -39,12 +39,21 @@ A separate FastAPI-based ML microservice calculates a user's procrastination sco
 
 ## Recent Changes
 
-### November 4, 2025 - Sticky Notes Feature
-1. **New Sticky Notes Feature**
+### November 4, 2025 - Sticky Notes Feature & Text Editor
+
+1. **Text Editor Improvements**
+   - Added simple text formatting toolbar with Bold, Italic, and List buttons
+   - Markdown syntax support: `**bold**`, `*italic*`, `- list items`
+   - Automatic HTML rendering in view mode (bold → `<strong>`, italic → `<em>`, lists → `<ul><li>`)
+   - Mobile optimization: increased textarea height (min-h-32 on mobile vs min-h-24 on desktop)
+   - Larger sticky note cards on mobile (h-80 vs h-64 on desktop) for better usability
+   - Enhanced text readability with `text-base` font size
+
+2. **New Sticky Notes Feature**
    - Added full CRUD functionality for sticky notes with PostgreSQL backend
    - Implemented voice input using Web Speech API for creating and editing notes
    - Six customizable colors: yellow, pink, blue, green, purple, orange
-   - Convert sticky notes to tasks functionality
+   - Convert sticky notes to tasks functionality (sets dueDate to today)
    - Responsive grid layout with card-based UI
    - Full Russian and English localization
    - Database: `sticky_notes` table with user isolation
