@@ -166,8 +166,6 @@ export default function StickyNotes() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sticky-notes"] });
-      setNewNoteContent("");
-      setNewNoteColor("yellow");
       setCreateDialogOpen(false);
       toast({
         title: "Стикер создан",
@@ -424,7 +422,11 @@ export default function StickyNotes() {
           </p>
         </div>
         <Button
-          onClick={() => setCreateDialogOpen(true)}
+          onClick={() => {
+            setNewNoteContent("");
+            setNewNoteColor("yellow");
+            setCreateDialogOpen(true);
+          }}
           data-testid="button-open-create-dialog"
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -540,7 +542,16 @@ export default function StickyNotes() {
       )}
 
       {/* Create sticky note dialog */}
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+      <Dialog 
+        open={createDialogOpen} 
+        onOpenChange={(open) => {
+          setCreateDialogOpen(open);
+          if (!open) {
+            setNewNoteContent("");
+            setNewNoteColor("yellow");
+          }
+        }}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Создать стикер</DialogTitle>
@@ -590,7 +601,11 @@ export default function StickyNotes() {
           <DialogFooter>
             <Button
               variant="ghost"
-              onClick={() => setCreateDialogOpen(false)}
+              onClick={() => {
+                setCreateDialogOpen(false);
+                setNewNoteContent("");
+                setNewNoteColor("yellow");
+              }}
               data-testid="button-cancel-create"
             >
               Отмена
