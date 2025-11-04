@@ -21,6 +21,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import type { StickyNote as StickyNoteType, InsertTask } from "@shared/schema";
 import { useTranslation } from "react-i18next";
@@ -92,6 +100,7 @@ const renderFormattedText = (text: string) => {
 
 export default function StickyNotes() {
   const { t } = useTranslation();
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -159,6 +168,7 @@ export default function StickyNotes() {
       queryClient.invalidateQueries({ queryKey: ["/api/sticky-notes"] });
       setNewNoteContent("");
       setNewNoteColor("yellow");
+      setCreateDialogOpen(false);
       toast({
         title: "Стикер создан",
         description: "Новый стикер успешно добавлен.",
@@ -403,73 +413,24 @@ export default function StickyNotes() {
 
   return (
     <div className="min-h-screen p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold flex items-center gap-2" data-testid="text-page-title">
-          <StickyNote className="h-6 w-6" />
-          Стикеры
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Быстрые заметки с голосовым вводом
-        </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2" data-testid="text-page-title">
+            <StickyNote className="h-6 w-6" />
+            Стикеры
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Быстрые заметки с голосовым вводом
+          </p>
+        </div>
+        <Button
+          onClick={() => setCreateDialogOpen(true)}
+          data-testid="button-open-create-dialog"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Создать стикер
+        </Button>
       </div>
-
-      {/* Create new sticky note */}
-      <Card className="mb-6">
-        <CardHeader className="pb-3">
-          <h2 className="text-lg font-semibold">Создать стикер</h2>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <TextFormattingToolbar
-              onFormat={(type) => applyFormatting(type, true)}
-              disabled={isListening && !isListeningForNote}
-            />
-            <div className="relative">
-              <Textarea
-                ref={newNoteTextareaRef}
-                value={newNoteContent}
-                onChange={(e) => setNewNoteContent(e.target.value)}
-                placeholder="Введите текст стикера или используйте голосовой ввод..."
-                className="min-h-32 md:min-h-24 text-base"
-                data-testid="input-new-note-content"
-              />
-              <Button
-                size="icon"
-                variant="ghost"
-                className={`absolute bottom-2 right-2 ${isListening && !isListeningForNote ? 'bg-red-500 text-white' : ''}`}
-                onClick={() => toggleVoiceInput()}
-                data-testid="button-voice-new-note"
-              >
-                {isListening && !isListeningForNote ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-              </Button>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Цвет:</span>
-              {COLORS.map((color) => (
-                <button
-                  key={color.value}
-                  onClick={() => setNewNoteColor(color.value as any)}
-                  className={`w-8 h-8 rounded border-2 ${color.bg} ${
-                    newNoteColor === color.value ? color.border : 'border-transparent'
-                  } hover-elevate`}
-                  data-testid={`button-color-${color.value}`}
-                  aria-label={`Цвет ${color.value}`}
-                />
-              ))}
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button
-            onClick={handleCreateNote}
-            disabled={createNoteMutation.isPending}
-            data-testid="button-create-note"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Создать стикер
-          </Button>
-        </CardFooter>
-      </Card>
 
       {/* Sticky notes grid */}
       {!notes || notes.length === 0 ? (
@@ -577,6 +538,74 @@ export default function StickyNotes() {
           })}
         </div>
       )}
+
+      {/* Create sticky note dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Создать стикер</DialogTitle>
+            <DialogDescription>
+              Быстрые заметки с голосовым вводом и форматированием текста
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-4">
+            <TextFormattingToolbar
+              onFormat={(type) => applyFormatting(type, true)}
+              disabled={isListening && !isListeningForNote}
+            />
+            <div className="relative">
+              <Textarea
+                ref={newNoteTextareaRef}
+                value={newNoteContent}
+                onChange={(e) => setNewNoteContent(e.target.value)}
+                placeholder="Введите текст стикера или используйте голосовой ввод..."
+                className="min-h-32 md:min-h-24 text-base"
+                data-testid="input-new-note-content"
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                className={`absolute bottom-2 right-2 ${isListening && !isListeningForNote ? 'bg-red-500 text-white' : ''}`}
+                onClick={() => toggleVoiceInput()}
+                data-testid="button-voice-new-note"
+              >
+                {isListening && !isListeningForNote ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Цвет:</span>
+              {COLORS.map((color) => (
+                <button
+                  key={color.value}
+                  onClick={() => setNewNoteColor(color.value as any)}
+                  className={`w-8 h-8 rounded border-2 ${color.bg} ${
+                    newNoteColor === color.value ? color.border : 'border-transparent'
+                  } hover-elevate`}
+                  data-testid={`button-color-${color.value}`}
+                  aria-label={`Цвет ${color.value}`}
+                />
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setCreateDialogOpen(false)}
+              data-testid="button-cancel-create"
+            >
+              Отмена
+            </Button>
+            <Button
+              onClick={handleCreateNote}
+              disabled={createNoteMutation.isPending}
+              data-testid="button-create-note"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Создать стикер
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
