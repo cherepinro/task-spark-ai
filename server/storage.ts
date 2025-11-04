@@ -13,6 +13,8 @@ import {
   type InsertUserStats,
   type PushToken,
   type InsertPushToken,
+  type StickyNote,
+  type InsertStickyNote,
   type User,
   type UpsertUser,
   tasks,
@@ -22,6 +24,7 @@ import {
   userSettings,
   userStats,
   pushTokens,
+  stickyNotes,
   users,
 } from "@shared/schema";
 import { db } from "./db";
@@ -86,6 +89,13 @@ export interface IStorage {
   savePushToken(token: InsertPushToken): Promise<PushToken>;
   getAllPushTokens(userId?: string): Promise<PushToken[]>;
   deletePushToken(token: string): Promise<boolean>;
+
+  // Sticky Note operations
+  getAllStickyNotes(userId: string): Promise<StickyNote[]>;
+  getStickyNote(id: string): Promise<StickyNote | undefined>;
+  createStickyNote(note: InsertStickyNote): Promise<StickyNote>;
+  updateStickyNote(id: string, note: Partial<InsertStickyNote>): Promise<StickyNote | undefined>;
+  deleteStickyNote(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -435,6 +445,42 @@ export class DatabaseStorage implements IStorage {
 
   async deletePushToken(token: string): Promise<boolean> {
     const result = await db.delete(pushTokens).where(eq(pushTokens.token, token));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Sticky Note operations
+  async getAllStickyNotes(userId: string): Promise<StickyNote[]> {
+    return db
+      .select()
+      .from(stickyNotes)
+      .where(eq(stickyNotes.userId, userId))
+      .orderBy(stickyNotes.position, stickyNotes.createdAt);
+  }
+
+  async getStickyNote(id: string): Promise<StickyNote | undefined> {
+    const [note] = await db.select().from(stickyNotes).where(eq(stickyNotes.id, id));
+    return note;
+  }
+
+  async createStickyNote(noteData: InsertStickyNote): Promise<StickyNote> {
+    const [created] = await db
+      .insert(stickyNotes)
+      .values(noteData)
+      .returning();
+    return created;
+  }
+
+  async updateStickyNote(id: string, noteData: Partial<InsertStickyNote>): Promise<StickyNote | undefined> {
+    const [updated] = await db
+      .update(stickyNotes)
+      .set({ ...noteData, updatedAt: new Date() })
+      .where(eq(stickyNotes.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteStickyNote(id: string): Promise<boolean> {
+    const result = await db.delete(stickyNotes).where(eq(stickyNotes.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
   }
 }
