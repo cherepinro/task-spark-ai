@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { EmptyState } from "@/components/empty-state";
-import { StickyNote, Plus, Trash2, Mic, MicOff, ArrowRight } from "lucide-react";
+import { StickyNote, Plus, Trash2, Mic, MicOff, ArrowRight, Bold, Italic, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -34,6 +34,62 @@ const COLORS = [
   { value: "orange", bg: "bg-orange-100 dark:bg-orange-900/30", border: "border-orange-300 dark:border-orange-700" },
 ] as const;
 
+const TextFormattingToolbar = ({ 
+  onFormat, 
+  disabled 
+}: { 
+  onFormat: (type: 'bold' | 'italic' | 'list') => void;
+  disabled?: boolean;
+}) => (
+  <div className="flex gap-1 mb-2">
+    <Button
+      size="sm"
+      variant="ghost"
+      onClick={() => onFormat('bold')}
+      disabled={disabled}
+      data-testid="button-format-bold"
+      title="Жирный текст"
+      className="h-7 w-7 p-0"
+    >
+      <Bold className="h-3.5 w-3.5" />
+    </Button>
+    <Button
+      size="sm"
+      variant="ghost"
+      onClick={() => onFormat('italic')}
+      disabled={disabled}
+      data-testid="button-format-italic"
+      title="Курсив"
+      className="h-7 w-7 p-0"
+    >
+      <Italic className="h-3.5 w-3.5" />
+    </Button>
+    <Button
+      size="sm"
+      variant="ghost"
+      onClick={() => onFormat('list')}
+      disabled={disabled}
+      data-testid="button-format-list"
+      title="Список"
+      className="h-7 w-7 p-0"
+    >
+      <List className="h-3.5 w-3.5" />
+    </Button>
+  </div>
+);
+
+const renderFormattedText = (text: string) => {
+  let formatted = text;
+  
+  formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  formatted = formatted.replace(/^- (.+)$/gm, '<li>$1</li>');
+  formatted = formatted.replace(/(<li>.*<\/li>\n?)+/g, '<ul class="list-disc list-inside space-y-1">$&</ul>');
+  formatted = formatted.replace(/\n/g, '<br/>');
+  
+  return formatted;
+};
+
 export default function StickyNotes() {
   const { t } = useTranslation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -45,6 +101,8 @@ export default function StickyNotes() {
   const [isListening, setIsListening] = useState(false);
   const [isListeningForNote, setIsListeningForNote] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
+  const newNoteTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const editNoteTextareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
 
   const { data: notes, isLoading } = useQuery<StickyNoteType[]>({
@@ -258,6 +316,70 @@ export default function StickyNotes() {
     }
   };
 
+  const applyFormatting = (
+    type: 'bold' | 'italic' | 'list',
+    isNewNote: boolean
+  ) => {
+    const textareaRef = isNewNote ? newNoteTextareaRef : editNoteTextareaRef;
+    const content = isNewNote ? newNoteContent : editContent;
+    const setContent = isNewNote ? setNewNoteContent : setEditContent;
+
+    if (!textareaRef.current) return;
+
+    const textarea = textareaRef.current;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = content.substring(start, end);
+    const hasSelection = selectedText.length > 0;
+
+    let newText = '';
+    let cursorOffset = 0;
+
+    switch (type) {
+      case 'bold':
+        if (hasSelection) {
+          newText = content.substring(0, start) + `**${selectedText}**` + content.substring(end);
+          cursorOffset = 2;
+        } else {
+          newText = content.substring(0, start) + '****' + content.substring(end);
+          cursorOffset = 2;
+        }
+        break;
+      case 'italic':
+        if (hasSelection) {
+          newText = content.substring(0, start) + `*${selectedText}*` + content.substring(end);
+          cursorOffset = 1;
+        } else {
+          newText = content.substring(0, start) + '**' + content.substring(end);
+          cursorOffset = 1;
+        }
+        break;
+      case 'list':
+        const lines = selectedText ? selectedText.split('\n') : [''];
+        const formattedLines = lines.map(line => line.trim() ? `- ${line}` : line).join('\n');
+        if (hasSelection) {
+          newText = content.substring(0, start) + formattedLines + content.substring(end);
+        } else {
+          newText = content.substring(0, start) + '- ' + content.substring(end);
+          cursorOffset = 2;
+        }
+        break;
+    }
+
+    setContent(newText);
+
+    setTimeout(() => {
+      if (textareaRef.current) {
+        if (hasSelection) {
+          textareaRef.current.setSelectionRange(start + cursorOffset, end + cursorOffset + (type === 'bold' ? 2 : type === 'italic' ? 1 : 0));
+        } else {
+          textareaRef.current.setSelectionRange(start + cursorOffset, start + cursorOffset);
+        }
+        textareaRef.current.focus();
+      }
+    }, 0);
+  };
+
   const getColorClasses = (color: string) => {
     const colorObj = COLORS.find(c => c.value === color);
     return colorObj || COLORS[0];
@@ -298,12 +420,17 @@ export default function StickyNotes() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
+            <TextFormattingToolbar
+              onFormat={(type) => applyFormatting(type, true)}
+              disabled={isListening && !isListeningForNote}
+            />
             <div className="relative">
               <Textarea
+                ref={newNoteTextareaRef}
                 value={newNoteContent}
                 onChange={(e) => setNewNoteContent(e.target.value)}
                 placeholder="Введите текст стикера или используйте голосовой ввод..."
-                className="min-h-24"
+                className="min-h-32 md:min-h-24 text-base"
                 data-testid="input-new-note-content"
               />
               <Button
@@ -360,16 +487,21 @@ export default function StickyNotes() {
             return (
               <Card
                 key={note.id}
-                className={`${colorClasses.bg} ${colorClasses.border} border-2 h-64 flex flex-col hover-elevate`}
+                className={`${colorClasses.bg} ${colorClasses.border} border-2 h-80 md:h-64 flex flex-col hover-elevate`}
                 data-testid={`card-note-${note.id}`}
               >
-                <CardContent className="p-4 flex-1 overflow-auto">
+                <CardContent className="p-4 flex-1 overflow-auto flex flex-col">
                   {isEditing ? (
-                    <div className="relative h-full">
+                    <div className="relative h-full flex flex-col">
+                      <TextFormattingToolbar
+                        onFormat={(type) => applyFormatting(type, false)}
+                        disabled={isListening && isListeningForNote === note.id}
+                      />
                       <Textarea
+                        ref={editNoteTextareaRef}
                         value={editContent}
                         onChange={(e) => setEditContent(e.target.value)}
-                        className={`h-full resize-none ${colorClasses.bg} border-none focus-visible:ring-0`}
+                        className={`flex-1 resize-none ${colorClasses.bg} border-none focus-visible:ring-0 text-base`}
                         data-testid={`input-edit-note-${note.id}`}
                       />
                       <Button
@@ -389,13 +521,12 @@ export default function StickyNotes() {
                       </Button>
                     </div>
                   ) : (
-                    <p
-                      className="text-sm whitespace-pre-wrap break-words cursor-pointer"
+                    <div
+                      className="text-sm break-words cursor-pointer overflow-auto"
                       onClick={() => handleEditClick(note)}
                       data-testid={`text-note-content-${note.id}`}
-                    >
-                      {note.content || "Пустой стикер"}
-                    </p>
+                      dangerouslySetInnerHTML={{ __html: renderFormattedText(note.content || "Пустой стикер") }}
+                    />
                   )}
                 </CardContent>
                 <CardFooter className="p-2 gap-1 flex-wrap">
