@@ -8,6 +8,7 @@ import {
   Plus,
   FileCode2,
   CalendarClock,
+  StickyNote,
   Settings as SettingsIcon,
   Shield,
   LogOut,
@@ -67,6 +68,11 @@ const navigationItems = [
     key: "templates",
     url: "/templates",
     icon: FileCode2,
+  },
+  {
+    key: "stickyNotes",
+    url: "/sticky-notes",
+    icon: StickyNote,
   },
   {
     key: "archive",

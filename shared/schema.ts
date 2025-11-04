@@ -279,7 +279,7 @@ export type InsertUserStats = typeof userStats.$inferInsert;
 export type PushToken = typeof pushTokens.$inferSelect;
 export type InsertPushToken = typeof pushTokens.$inferInsert;
 export type StickyNote = typeof stickyNotes.$inferSelect;
-export type InsertStickyNote = z.infer<typeof insertStickyNoteSchema>;
+export type InsertStickyNote = typeof stickyNotes.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type UpsertUser = typeof users.$inferInsert;
 

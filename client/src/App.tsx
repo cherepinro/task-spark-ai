@@ -23,6 +23,7 @@ import ProjectDetail from "@/pages/project-detail";
 import TaskDetail from "@/pages/task-detail";
 import Insights from "@/pages/insights";
 import Templates from "@/pages/templates";
+import StickyNotes from "@/pages/sticky-notes";
 import Archive from "@/pages/archive";
 import DayPlan from "@/pages/day-plan";
 import Settings from "@/pages/settings";
@@ -72,6 +73,7 @@ function Router() {
           <Route path="/insights" component={Insights} />
           <Route path="/day-plan" component={DayPlan} />
           <Route path="/templates" component={Templates} />
+          <Route path="/sticky-notes" component={StickyNotes} />
           <Route path="/archive" component={Archive} />
           <Route path="/settings" component={Settings} />
           <Route path="/admin" component={Admin} />
