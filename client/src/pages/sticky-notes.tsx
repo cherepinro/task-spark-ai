@@ -167,6 +167,7 @@ export default function StickyNotes() {
         description: note.content.length > 100 ? note.content : null,
         priority: "medium",
         status: "todo",
+        dueDate: new Date(),
       };
 
       await apiRequest("POST", "/api/tasks", taskData);

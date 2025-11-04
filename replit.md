@@ -20,10 +20,11 @@ Core features include:
 - **Task Management**: CRUD operations, search, filtering, recurring tasks, templates, deadline management.
 - **AI Capabilities**: Smart categorization, priority suggestions, natural language parsing, productivity insights, AI-optimized Day Planning, AI Task Decomposition into subtasks (stored as JSONB within the parent task).
 - **Focus Sprint** feature.
+- **Sticky Notes**: Quick notes feature with voice input (Web Speech API), customizable colors, and ability to convert notes into tasks. Full CRUD operations with user-specific data isolation.
 - **User Authentication**: Custom email/password (with bcrypt) and Firebase OAuth for Google sign-in. Firebase Auth SDK for frontend, backend verification of Firebase ID tokens. Sessions managed via PostgreSQL. Role-based access control for AI and admin endpoints.
 - **Internationalization**: Full support with `react-i18next`, Russian as primary.
 
-Data models for `Task`, `Project`, `AIInsight`, `TaskTemplate`, `UserSettings`, and `UserStats` support features like recurrence, AI suggestions, and usage statistics. The API provides endpoints for Task and Project management, various AI features (suggest, parse, chat, decompose, day-plan), ML features (procrastination score), Templates, Usage, Statistics, Push Notifications, and Cache management, with Swagger documentation.
+Data models for `Task`, `Project`, `AIInsight`, `TaskTemplate`, `UserSettings`, `UserStats`, and `StickyNote` support features like recurrence, AI suggestions, usage statistics, and quick notes. The API provides endpoints for Task and Project management, various AI features (suggest, parse, chat, decompose, day-plan), ML features (procrastination score), Templates, Sticky Notes, Usage, Statistics, Push Notifications, and Cache management, with Swagger documentation.
 
 A separate FastAPI-based ML microservice calculates a user's procrastination score, integrated with the Express backend and displayed in the React UI.
 
@@ -36,7 +37,21 @@ A separate FastAPI-based ML microservice calculates a user's procrastination sco
 - **Internationalization**: `react-i18next`
 - **Drag and Drop**: `@hello-pangea/dnd`
 
-## Recent Changes (October 28, 2025)
+## Recent Changes
+
+### November 4, 2025 - Sticky Notes Feature
+1. **New Sticky Notes Feature**
+   - Added full CRUD functionality for sticky notes with PostgreSQL backend
+   - Implemented voice input using Web Speech API for creating and editing notes
+   - Six customizable colors: yellow, pink, blue, green, purple, orange
+   - Convert sticky notes to tasks functionality
+   - Responsive grid layout with card-based UI
+   - Full Russian and English localization
+   - Database: `sticky_notes` table with user isolation
+   - API endpoints: GET/POST/PATCH/DELETE `/api/sticky-notes`
+   - Frontend page: `/sticky-notes` with sidebar navigation
+
+### October 28, 2025
 
 ### Critical Bug Fixes
 1. **Date Picker Off-by-One Month Error** (FIXED)
