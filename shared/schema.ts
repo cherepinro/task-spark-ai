@@ -133,6 +133,16 @@ export const pushTokens = pgTable("push_tokens", {
   updatedAt: timestamp("updated_at", { mode: "date" }).notNull().default(sql`now()`),
 });
 
+export const stickyNotes = pgTable("sticky_notes", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  content: text("content").notNull().default(""),
+  color: varchar("color", { length: 20 }).notNull().default("yellow"),
+  position: integer("position").notNull().default(0),
+  createdAt: timestamp("created_at", { mode: "date" }).notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at", { mode: "date" }).notNull().default(sql`now()`),
+});
+
 // Relations
 export const tasksRelations = relations(tasks, ({ one }) => ({
   project: one(projects, {
@@ -240,6 +250,19 @@ export const insertPushTokenSchema = createInsertSchema(pushTokens).omit({
   platform: z.enum(["android", "ios"]),
 });
 
+export const insertStickyNoteSchema = createInsertSchema(stickyNotes).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  content: z.string().default(""),
+  color: z.enum(["yellow", "pink", "blue", "green", "purple", "orange"]).default("yellow"),
+  position: z.number().int().default(0),
+});
+
+export const updateStickyNoteSchema = insertStickyNoteSchema.partial();
+
 export type Task = typeof tasks.$inferSelect;
 export type InsertTask = typeof tasks.$inferInsert;
 export type Project = typeof projects.$inferSelect;
@@ -255,6 +278,8 @@ export type UserStats = typeof userStats.$inferSelect;
 export type InsertUserStats = typeof userStats.$inferInsert;
 export type PushToken = typeof pushTokens.$inferSelect;
 export type InsertPushToken = typeof pushTokens.$inferInsert;
+export type StickyNote = typeof stickyNotes.$inferSelect;
+export type InsertStickyNote = z.infer<typeof insertStickyNoteSchema>;
 export type User = typeof users.$inferSelect;
 export type UpsertUser = typeof users.$inferInsert;
 
